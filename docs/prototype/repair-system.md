@@ -9,7 +9,7 @@
 - CONFIRMED: Reparatur ist kostenlos.
 - CONFIRMED: Die Reparatur erfolgt in Schritten von 5 HP. Alle 5 Sekunden werden 5 HP wiederhergestellt. Eine vollständige Reparatur von 0 auf 100 HP dauert 100 Sekunden. Die Geschwindigkeit ist ein vorläufiger Prototypwert.
 - CONFIRMED: Der Spieler muss sich in der Reparaturzone des jeweiligen Zugteils befinden und kann sich darin frei bewegen. Verlässt er die Zone, pausiert die Reparatur, der bisherige Fortschritt bleibt erhalten, und der Spieler kann später genau dort weitermachen.
-- TESTWERT (Balance-Teststand 1, nicht bestätigt): Im Spieltest ist die Schrittdauer vorläufig auf 2,5 s gesetzt (5 HP je 2,5 s, also 2 HP/s, 0 auf 100 HP in 50 s). Die bestätigte Regel D-056 (5 s, 100 s) ist damit nicht geändert, sondern nur überlagert, bis du entscheidest. Der Wert steht als `TESTWERTE.repairStepMs` in `src/config.ts`.
+- TESTWERT (Balance-Teststand 2, nicht bestätigt): Im Spieltest ist die Schrittdauer vorläufig auf 3,333 s gesetzt (5 HP je 3,333 s, also 1,5 HP/s, 0 auf 100 HP in etwa 66,7 s; Teststand 1 hatte 2 HP/s). Die bestätigte Regel D-056 (5 s, 100 s) ist damit nicht geändert, sondern nur überlagert, bis du entscheidest. Der Wert steht als `TESTWERTE.repairStepMs` in `src/config.ts`.
 - CONFIRMED: Die Reparatur erfolgt automatisch, ohne zusätzliche Taste. Der Spieler greift währenddessen weiterhin automatisch an.
 - CONFIRMED: Es kann immer nur ein Zugobjekt gleichzeitig repariert werden.
 - CONFIRMED: Die Zonen müssen klar erkennbar sein. Die Form ist nicht vorgeschrieben (z. B. rechteckig oder rund).

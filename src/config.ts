@@ -68,10 +68,11 @@ export const TESTWERTE = {
   // Balance-Teststand 1: Angriffsintervalle (vorher je 1000 ms)
   player: { damage: 1, cooldownMs: 700 },
   turret: { damage: 1, cooldownMs: 2500 },
-  // Balance-Teststand 1: Reparaturschritt (5 HP je 2500 ms = 2 HP/s). VORLÄUFIGER TESTWERT.
+  // Balance-Teststand 2: Reparaturschritt (5 HP je 3333 ms = 1,5 HP/s). VORLÄUFIGER TESTWERT.
+  // (Teststand 1 hatte 2500 ms = 2 HP/s.)
   // Die bestätigte Regel D-056 lautet 5 HP je 5000 ms (1 HP/s, 0 auf 100 HP in 100 s). Sie ist nicht
   // geändert, nur im Spieltest überlagert. Für den Rückweg auf den bestätigten Wert: 5000.
-  repairStepMs: 2500,
+  repairStepMs: 3333,
   enemy: { hp: 3, speed: 40 },
   waves: {
     gemuetlich: {

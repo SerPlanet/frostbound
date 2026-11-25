@@ -5,7 +5,7 @@
 // (game/train.ts), R setzt den aktuellen Zustand zurück. Im normalen Spiel gibt es das nicht.
 
 import Phaser from "phaser";
-import { CONFIRMED } from "../config.ts";
+import { CONFIRMED, TESTWERTE } from "../config.ts";
 import { getRoundSummary } from "../game/stats.ts";
 import { damageTrainPart, damageTurret } from "../game/train.ts";
 import { createWorld } from "../game/world.ts";
@@ -95,7 +95,7 @@ const STATES: VisualState[] = [
       const world = createWorld("normal");
       setPart(world.wagon, 55, false);
       setPart(world.locomotive, 70, false);
-      world.wagon.repairProgressMs = 2500;
+      world.wagon.repairProgressMs = TESTWERTE.repairStepMs / 2; // 50 % des aktuellen Reparaturschritts
       world.activeRepair = "wagon";
       world.player.x = world.wagon.zone.x + world.wagon.zone.w / 2;
       world.player.y = world.wagon.zone.y + 40;
