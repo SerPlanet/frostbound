@@ -34,9 +34,14 @@ export const LAYOUT = {
   locomotiveRect: { x: 660, y: 620, w: 280, h: 80 },
   // Geschütz auf der Wagon-Mitte
   turretPos: { x: 480, y: 640 },
-  // TECH-09: Reparaturzonen direkt über den Teilen, nicht überlappend
-  wagonZone: { x: 340, y: 500, w: 280, h: 120 },
-  locomotiveZone: { x: 660, y: 500, w: 280, h: 120 },
+  // TECH-09: Reparaturzonen, nicht überlappend, direkt oberhalb des Zugbereichs.
+  // Balance-Teststand 3: Die Zonen sind nach außen versetzt (vorher direkt mittig über den Teilen:
+  // Wagon x 340 bis 620, Lokomotive x 660 bis 940, je 280 breit). Hintergrund: In der Mitte über den
+  // Teilen laufen alle Gegner eines Zugteils zusammen, dort war die Zone zugleich die beste Kampfposition.
+  // Jetzt: Wagon x 300 bis 440 (über dem linken Ende des Wagons), Lokomotive x 840 bis 980 (über dem
+  // rechten Ende der Lokomotive), je 140 breit.
+  wagonZone: { x: 300, y: 500, w: 140, h: 120 },
+  locomotiveZone: { x: 840, y: 500, w: 140, h: 120 },
   playerStart: { x: 640, y: 360 },
   playerRadius: 14,
   // TECH-10: Gegner-Spawn oberhalb des Spielfeldes
