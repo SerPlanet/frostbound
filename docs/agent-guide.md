@@ -2,6 +2,7 @@
 
 **Zweck:** Zeigt, welche Dokumente ein Agent für welche Aufgabe lesen muss. Kein Agent muss alle Dokumente lesen.
 **Zielgruppe:** Alle Claude-Code-Agenten und deren Auftraggeber.
+**Abhängigkeiten:** [README.md](README.md) (Statuslegende).
 
 ## Grundregeln für jeden Agenten
 
@@ -22,12 +23,16 @@
 | Projekt verstehen / Einstieg | project/overview, prototype/scope | open-questions |
 | Spielfeld, Spielablauf, Angriffsverlauf | prototype/core-gameplay, prototype/scope | prototype/enemies |
 | Spielerbewegung, Bauen/Reparieren durch Nähe | prototype/player, technical/architecture | prototype/core-gameplay |
-| Gegnerverhalten, Spawning, Zielwahl | prototype/enemies, technical/architecture | prototype/difficulty |
-| Automatische Angriffe, Zuggeschütz | prototype/combat, technical/architecture | prototype/player, prototype/enemies |
-| Zug, Schaden, Reparatur | prototype/train-and-defense, technical/architecture | prototype/resources, prototype/win-lose |
-| Ressourcen | prototype/resources | prototype/train-and-defense |
+| Gegnerverhalten, Spawning, Bewegung, Zielwahl | prototype/enemies, technical/architecture | prototype/difficulty, prototype/train-and-defense |
+| Automatische Angriffe, Zuggeschütz, Treffer, Besiegen | prototype/combat, technical/architecture | prototype/player, prototype/enemies |
+| Zug, Lebenspunkte, Schaden | prototype/train-and-defense, technical/architecture | prototype/repair-system, prototype/win-lose |
+| Reparatur, Reparaturbereiche, Prioritäten | prototype/repair-system, prototype/train-and-defense | prototype/player, technical/architecture |
+| Ressourcen (Prototyp: keine Progression) | prototype/resources | prototype/repair-system |
 | Schwierigkeitsgrade | prototype/difficulty | prototype/enemies |
 | Sieg/Niederlage, Rundenende | prototype/win-lose | prototype/train-and-defense |
+| Startbildschirm, Schwierigkeitswahl, HUD, Ergebnisbildschirm | prototype/ui-and-flow, prototype/win-lose | prototype/difficulty, technical/architecture |
+| Balance-Modell, Statistik am Rundenende | prototype/balance-and-statistics | prototype/combat, prototype/enemies, prototype/difficulty |
+| Begriffe klären | project/glossary | – |
 | Code-Architektur, Projektstruktur (später) | technical/architecture, technical/testing-and-greybox | prototype/scope |
 | Greybox-Darstellung, Tests, Testszenen | technical/testing-and-greybox, technical/architecture | das jeweilige Gameplay-Dokument |
 | Dokumentation pflegen, Entscheidung eintragen | project/process, project/decision-log | open-questions |

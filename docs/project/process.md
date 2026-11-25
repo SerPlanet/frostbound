@@ -15,7 +15,8 @@ Der Statuswortschatz CONFIRMED, PROPOSED, OPEN gilt für alle Designentscheidung
 5. Neue offene Frage: Eintrag in [open-questions.md](../open-questions.md) mit Q-ID und im betroffenen Fachdokument als OPEN. Wird sie entschieden, wird der Q-Eintrag auf „entschieden“ gesetzt und auf die D-ID verwiesen.
 6. Keine Widersprüche zwischen Dokumenten. Bei Zweifel gilt das Entscheidungsprotokoll.
 7. Zahlenwerte nur, wenn CONFIRMED. Sonst als OPEN führen.
-8. Möglichst wenige Dokumente. Neue Dokumente nur bei klar eigenständigem Zweck, und sie werden in [README.md](../README.md) und [agent-guide.md](../agent-guide.md) eingetragen.
+8. Prototyp und Vollspiel bleiben getrennt: Vollspielinhalte (Adventskalender, drei Ressourcen, Upgrades, Progression) stehen nur in [overview.md](overview.md) und im Abschnitt „Vollspiel“ von [resources.md](../prototype/resources.md) und erzeugen keine Prototyp-Anforderungen.
+9. Möglichst wenige Dokumente. Neue Dokumente nur bei klar eigenständigem Zweck, und sie werden in [README.md](../README.md) und [agent-guide.md](../agent-guide.md) eingetragen.
 
 ## Standard für Anforderungen und Erfolgskriterien (CONFIRMED: D-029)
 
