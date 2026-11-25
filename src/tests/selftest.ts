@@ -11,14 +11,16 @@ declare const process: { exit(code: number): never } | undefined;
 
 let passed = 0;
 let failed = 0;
+// Ausgabe der Zeilen: Standard Konsole (Node), im Browser übergibt die Testseite eine eigene Funktion.
+let log: (line: string) => void = (line) => console.log(line);
 
 function check(name: string, condition: boolean): void {
   if (condition) {
     passed++;
-    console.log(`PASS  ${name}`);
+    log(`PASS  ${name}`);
   } else {
     failed++;
-    console.log(`FAIL  ${name}`);
+    log(`FAIL  ${name}`);
   }
 }
 
@@ -44,9 +46,10 @@ function inside(px: number, py: number, r: Rect): boolean {
   return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
 }
 
-export function runSelfTest(): { passed: number; failed: number } {
+export function runSelfTest(output?: (line: string) => void): { passed: number; failed: number } {
   passed = 0;
   failed = 0;
+  if (output) log = output;
   const idle: PlayerInput = { x: 0, y: 0 };
 
   // --- Neue Welt (REQ-TRN-001, REQ-TRN-003)
@@ -121,9 +124,9 @@ export function runSelfTest(): { passed: number; failed: number } {
     return b.wagon.hp === 100 && b.wagon.rect.x === LAYOUT.wagonRect.x && LAYOUT.wagonRect.x === 660;
   })());
 
-  console.log("");
-  console.log(`Ergebnis: ${passed} bestanden, ${failed} fehlgeschlagen, ${passed + failed} gesamt`);
-  console.log(failed === 0 ? "GESAMT: PASS" : "GESAMT: FAIL");
+  log("");
+  log(`Ergebnis: ${passed} bestanden, ${failed} fehlgeschlagen, ${passed + failed} gesamt`);
+  log(failed === 0 ? "GESAMT: PASS" : "GESAMT: FAIL");
   return { passed, failed };
 }
 
