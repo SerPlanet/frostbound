@@ -115,6 +115,142 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
   }
   check("REQ-ARC-007  Zwei Läufe mit gleicher Zufallsfunktion und gleichen Eingaben sind identisch", run() === run());
 
+  // --- Spielerbewegung (REQ-PLR-001, REQ-PLR-004, REQ-PLR-005)
+  {
+    const dt = LAYOUT.stepMs;
+    const v = TESTWERTE.playerSpeed;
+    const r = LAYOUT.playerRadius;
+    const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
+    const fresh = (): World => createWorld("normal", makeTestRandom());
+    const steps = (world: World, input: PlayerInput, n: number, stepMs: number = dt): void => {
+      for (let i = 0; i < n; i++) stepWorld(world, input, stepMs);
+    };
+    const hitsRect = (cx: number, cy: number, rect: Rect): boolean => {
+      const nx = Math.min(Math.max(cx, rect.x), rect.x + rect.w);
+      const ny = Math.min(Math.max(cy, rect.y), rect.y + rect.h);
+      return Math.hypot(cx - nx, cy - ny) < r;
+    };
+    const stepLen = (v * dt) / 1000;
+
+    for (const [name, input, ex, ey] of [
+      ["nach oben", { x: 0, y: -1 }, 0, -1],
+      ["nach unten", { x: 0, y: 1 }, 0, 1],
+      ["nach links", { x: -1, y: 0 }, -1, 0],
+      ["nach rechts", { x: 1, y: 0 }, 1, 0],
+    ] as [string, PlayerInput, number, number][]) {
+      const world = fresh();
+      const s = { x: world.player.x, y: world.player.y };
+      steps(world, input, 1);
+      check(`REQ-PLR-001  Bewegung ${name} (feste Geschwindigkeit)`, near(world.player.x, s.x + ex * stepLen) && near(world.player.y, s.y + ey * stepLen));
+    }
+
+    {
+      const world = fresh();
+      const s = { x: world.player.x, y: world.player.y };
+      steps(world, { x: 1, y: -1 }, 10);
+      const dx = world.player.x - s.x;
+      const dy = s.y - world.player.y;
+      check("REQ-PLR-001  Diagonale Bewegung geht in beide Richtungen", dx > 0 && dy > 0 && near(dx, dy));
+    }
+
+    {
+      const diag = fresh();
+      const axis = fresh();
+      const d0 = { x: diag.player.x, y: diag.player.y };
+      const a0 = { x: axis.player.x, y: axis.player.y };
+      steps(diag, { x: 1, y: -1 }, 30);
+      steps(axis, { x: 1, y: 0 }, 30);
+      const diagDist = Math.hypot(diag.player.x - d0.x, diag.player.y - d0.y);
+      const axisDist = Math.hypot(axis.player.x - a0.x, axis.player.y - a0.y);
+      check("REQ-PLR-001  Diagonale ist nicht schneller als Achsenbewegung", near(diagDist, axisDist) && near(axisDist, 30 * stepLen));
+    }
+
+    {
+      const a = fresh();
+      const b = fresh();
+      steps(a, { x: 1, y: 0 }, 60, 1000 / 60);
+      steps(b, { x: 1, y: 0 }, 30, 1000 / 30);
+      check("REQ-PLR-001  Bewegung hängt nicht von der Schrittgröße (Bildrate) ab", near(a.player.x, b.player.x) && near(a.player.x, LAYOUT.playerStart.x + v));
+    }
+
+    {
+      const world = fresh();
+      const s = { x: world.player.x, y: world.player.y };
+      steps(world, { x: 0, y: 0 }, 100);
+      check("REQ-PLR-001  Keine Bewegung bei fehlender Eingabe", world.player.x === s.x && world.player.y === s.y);
+    }
+
+    {
+      const left = fresh();
+      const right = fresh();
+      const up = fresh();
+      const down = fresh();
+      steps(left, { x: -1, y: 0 }, 1000);
+      steps(right, { x: 1, y: 0 }, 1000);
+      steps(up, { x: 0, y: -1 }, 1000);
+      steps(down, { x: 0, y: 1 }, 1000);
+      check(
+        "REQ-PLR-005  Begrenzung am Spielfeldrand (links, rechts, oben)",
+        near(left.player.x, r) && near(right.player.x, LAYOUT.field.width - r) && near(up.player.y, r),
+      );
+      check("REQ-PLR-005  Begrenzung am unteren Rand des Spielbereichs (oberhalb des Zuges)", near(down.player.y, LAYOUT.trainTopY - r));
+    }
+
+    {
+      const slide = fresh();
+      slide.player.x = r;
+      slide.player.y = 360;
+      steps(slide, { x: -1, y: -1 }, 10);
+      check("REQ-PLR-005  Gleiten an der Wand: x bleibt an der Grenze, y nimmt mit dem Diagonalanteil ab", near(slide.player.x, r) && near(slide.player.y, 360 - 10 * stepLen * Math.SQRT1_2));
+    }
+
+    {
+      let blocked = true;
+      let inside = false;
+      for (let x = 0; x <= LAYOUT.field.width; x += 20) {
+        const world = fresh();
+        world.player.x = Math.min(Math.max(x, r), LAYOUT.field.width - r);
+        world.player.y = 300;
+        for (let i = 0; i < 600; i++) {
+          stepWorld(world, { x: 0, y: 1 }, dt);
+          if (world.player.y > LAYOUT.trainTopY - r + 1e-9) blocked = false;
+          if (hitsRect(world.player.x, world.player.y, world.locomotive.rect) || hitsRect(world.player.x, world.player.y, world.wagon.rect)) inside = true;
+        }
+      }
+      check("REQ-PLR-005  Spieler gelangt nie in den Zugbereich", blocked);
+      check("REQ-PLR-005  Spieler überlappt nie Lokomotive oder Wagon", !inside);
+    }
+
+    {
+      const world = fresh();
+      world.player.x = LAYOUT.wagonRect.x + 100;
+      world.player.y = LAYOUT.trainTopY - r;
+      steps(world, { x: 1, y: 1 }, 50);
+      check("REQ-PLR-005  Diagonal gegen den Zug: Spieler bleibt oberhalb und gleitet seitlich", world.player.y <= LAYOUT.trainTopY - r + 1e-9 && world.player.x > LAYOUT.wagonRect.x + 100);
+    }
+
+    for (const status of ["won", "lost"] as const) {
+      const world = fresh();
+      world.status = status;
+      const s = { x: world.player.x, y: world.player.y };
+      steps(world, { x: 1, y: -1 }, 200);
+      check(`REQ-WL-005   Keine Bewegung bei beendetem Spiel (${status})`, world.player.x === s.x && world.player.y === s.y);
+    }
+
+    {
+      const free = fresh();
+      const crowded = fresh();
+      for (let i = 0; i < 20; i++) {
+        crowded.enemies.push({ id: i + 1, x: crowded.player.x + i * 3, y: crowded.player.y - i * 2, hp: 3, target: "wagon" });
+      }
+      steps(free, { x: 1, y: -1 }, 40);
+      steps(crowded, { x: 1, y: -1 }, 40);
+      check("REQ-PLR-004  Gegner behindern den Spieler nicht", near(free.player.x, crowded.player.x) && near(free.player.y, crowded.player.y));
+    }
+
+    check("REQ-PLR-002  Spieler hat weiterhin keine Lebenspunkte", !("hp" in fresh().player));
+  }
+
   // --- Konfiguration (REQ-ARC-004)
   check("REQ-ARC-004  Zwei Welten teilen keine Objekte der Konfiguration", (() => {
     const a = createWorld("normal");

@@ -41,6 +41,8 @@ export const LAYOUT = {
   enemySpawnXMax: 1240,
   // TECH-14: fester Zeitschritt in Millisekunden
   stepMs: 1000 / 60,
+  // Längste Frame-Zeit, die pro Bild in Simulationsschritte umgesetzt wird (verhindert Aufholschleifen)
+  maxFrameMs: 100,
 };
 
 // ---------------------------------------------------------------- TESTWERTE

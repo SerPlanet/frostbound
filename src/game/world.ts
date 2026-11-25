@@ -3,6 +3,7 @@
 
 import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
 import type { WavePlanConfig } from "../config.ts";
+import { movePlayer } from "./player.ts";
 import type { Difficulty, PlayerInput, SpawnEntry, TrainPart, World } from "./types.ts";
 
 /** Baut den Wellenplan aus der Konfiguration: einzelne Gegner, kleine Gruppen, große Welle. */
@@ -77,8 +78,8 @@ export function createWorld(difficulty: Difficulty, random: () => number = Math.
  * Bringt die Welt um einen festen Zeitschritt voran.
  * Ist der Status nicht `running`, bleibt die Welt unverändert (REQ-WL-005).
  *
- * Schrittreihenfolge der späteren Systeme (TECH-14), hier noch nicht implementiert:
- *   1 player.ts     Spieler bewegen
+ * Schrittreihenfolge der Systeme (TECH-14). Umgesetzt ist bisher nur Schritt 1:
+ *   1 player.ts     Spieler bewegen (umgesetzt)
  *   2 spawning.ts   Gegner laut Wellenplan erzeugen
  *   3 enemies.ts    Gegner bewegen
  *   4 enemies.ts    Kontakt, Schaden, Zerstörung, Zielneuwahl
@@ -94,6 +95,8 @@ export function stepWorld(world: World, input: PlayerInput, dtMs: number): void 
   world.events.length = 0;
   world.timeMs += dtMs;
 
-  // Noch keine Systeme: Die Eingabe wird erst ab Schritt 4 der Umsetzung ausgewertet.
-  void input;
+  // 1 Spieler bewegen
+  movePlayer(world, input, dtMs);
+
+  // 2 bis 8: noch nicht implementiert (siehe Reihenfolge oben).
 }
