@@ -35,7 +35,8 @@ export interface Enemy {
   x: number;
   y: number;
   hp: number;
-  target: PartId;
+  /** Gewähltes Zugteil. `null`, solange kein Teil intakt ist (dann ist das Spiel bereits verloren). */
+  target: PartId | null;
 }
 
 /**

@@ -3,9 +3,11 @@
 // Importiert nur game/ und config.ts, keine Browser-APIs, kein Phaser.
 
 import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
+import { chooseTarget } from "../game/enemies.ts";
+import { spawnEnemies } from "../game/spawning.ts";
 import { damageTrainPart, damageTurret, getPartCondition } from "../game/train.ts";
 import { createWorld, stepWorld } from "../game/world.ts";
-import type { Difficulty, PlayerInput, Rect, World } from "../game/types.ts";
+import type { Difficulty, Enemy, PlayerInput, Rect, World } from "../game/types.ts";
 
 // Nur für den Node-Aufruf am Ende der Datei. Kein Paket nötig.
 declare const process: { exit(code: number): never } | undefined;
@@ -367,6 +369,254 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       check("Darstellung   Zustand intakt, beschädigt, zerstört wird aus dem Weltzustand abgeleitet", c0 === "intact" && c1 === "damaged" && c2 === "destroyed");
       check("Darstellung   Zerstörter Wagon mit steigenden HP (Reparatur) gilt weiter als zerstört", getPartCondition(repairing.wagon) === "destroyed");
     }
+  }
+
+  // --- Gegner: Spawning, Bewegung, Zielwahl, Kontakt (REQ-ENM-001 bis REQ-ENM-008, REQ-CORE-002)
+  {
+    const dt = LAYOUT.stepMs;
+    const speedStep = (TESTWERTE.enemy.speed * dt) / 1000;
+    const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
+    const fresh = (d: Difficulty = "normal"): World => createWorld(d, makeTestRandom());
+    const seq = (values: number[]): (() => number) => {
+      let i = 0;
+      return () => values[i++ % values.length];
+    };
+    const enemy = (id: number, x: number, y: number, target: Enemy["target"]): Enemy => ({ id, x, y, hp: TESTWERTE.enemy.hp, target });
+    const center = (rect: Rect): { x: number; y: number } => ({ x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 });
+    const dist = (e: Enemy, rect: Rect): number => Math.hypot(center(rect).x - e.x, center(rect).y - e.y);
+    const run = (world: World, n: number, stepMs: number = dt): void => {
+      for (let i = 0; i < n; i++) stepWorld(world, { x: 0, y: 0 }, stepMs);
+    };
+    const due = (world: World): number => world.spawnPlan.filter((e) => e.atMs <= world.timeMs).reduce((s, e) => s + e.count, 0);
+
+    // 1 und 2: Spawning laut Wellenplan, Gesamtzahl je Schwierigkeitsgrad
+    const totals: Record<Difficulty, number> = { gemuetlich: 25, normal: 40, winterhart: 60 };
+    for (const d of Object.keys(totals) as Difficulty[]) {
+      const world = fresh(d);
+      let followsPlan = true;
+      let nothingEarly = true;
+      for (let i = 0; i < 8000; i++) {
+        stepWorld(world, { x: 0, y: 0 }, dt);
+        if (world.stats.spawned !== due(world)) followsPlan = false;
+        if (world.timeMs < 2990 && world.stats.spawned !== 0) nothingEarly = false;
+      }
+      check(`REQ-CORE-002 Spawning folgt dem Wellenplan zu jedem Zeitpunkt (${d})`, followsPlan && nothingEarly);
+      check(`REQ-DIF-002  Gesamtzahl ${d}: ${totals[d]} Gegner gespawnt`, world.stats.spawned === totals[d] && world.nextSpawnIndex === world.spawnPlan.length);
+    }
+
+    // 3: Spawnpositionen
+    {
+      const world = fresh();
+      world.timeMs = 40000;
+      spawnEnemies(world);
+      const ids = new Set(world.enemies.map((e) => e.id));
+      check(
+        "REQ-ENM-001  Gegner erscheinen oberhalb des Spielfeldes (y = Spawn-y, nicht sichtbar) mit x im Spawnbereich",
+        world.enemies.length === 8 &&
+          world.stats.spawned === 8 &&
+          ids.size === 8 &&
+          world.enemies.every((e) => e.y === LAYOUT.enemySpawnY && e.y + 10 < 0 && e.x >= LAYOUT.enemySpawnXMin && e.x <= LAYOUT.enemySpawnXMax),
+      );
+      check("REQ-ENM-001  Gruppe erscheint gleichzeitig mit unterschiedlichen x-Positionen", new Set(world.enemies.map((e) => e.x)).size === world.enemies.length);
+    }
+
+    // 4: Bewegung auf das Ziel
+    {
+      const world = fresh();
+      world.enemies.push(enemy(1, 300, 100, "wagon"));
+      const target = center(world.wagon.rect);
+      const start = { x: 300, y: 100 };
+      const d0 = dist(world.enemies[0], world.wagon.rect);
+      run(world, 10);
+      const e = world.enemies[0];
+      const progress = d0 - dist(e, world.wagon.rect);
+      const cross = (e.x - start.x) * (target.y - start.y) - (e.y - start.y) * (target.x - start.x);
+      check("REQ-ENM-005  Gegner bewegt sich mit fester Geschwindigkeit auf sein Ziel zu", near(progress, 10 * speedStep));
+      check("REQ-ENM-005  Der Weg ist eine gerade Linie zum Ziel (kürzester Weg)", Math.abs(cross) < 1e-6);
+    }
+
+    // 5: Bildraten-Unabhängigkeit
+    {
+      const a = fresh();
+      const b = fresh();
+      a.enemies.push(enemy(1, 300, 100, "locomotive"));
+      b.enemies.push(enemy(1, 300, 100, "locomotive"));
+      run(a, 60, 1000 / 60);
+      run(b, 30, 1000 / 30);
+      check("REQ-ENM-005  Gegnerbewegung hängt nicht von der Schrittgröße (Bildrate) ab", near(a.enemies[0].x, b.enemies[0].x) && near(a.enemies[0].y, b.enemies[0].y));
+    }
+
+    // 6 und 7: Zielwahl
+    {
+      const wagonA = fresh();
+      const wagonB = fresh();
+      wagonA.random = seq([0.1, 0.99]);
+      wagonB.random = seq([0.9, 0.99]);
+      wagonA.timeMs = wagonB.timeMs = 3000;
+      spawnEnemies(wagonA);
+      spawnEnemies(wagonB);
+      const locA = fresh();
+      const locB = fresh();
+      locA.random = seq([0.1, 0.0]);
+      locB.random = seq([0.9, 0.0]);
+      locA.timeMs = locB.timeMs = 3000;
+      spawnEnemies(locA);
+      spawnEnemies(locB);
+      check(
+        "REQ-ENM-002  Zielwahl ist unabhängig von der Spawnposition (gleiche Wahl bei verschiedener x-Position)",
+        wagonA.enemies[0].x !== wagonB.enemies[0].x &&
+          wagonA.enemies[0].target === "wagon" &&
+          wagonB.enemies[0].target === "wagon" &&
+          locA.enemies[0].x !== locB.enemies[0].x &&
+          locA.enemies[0].target === "locomotive" &&
+          locB.enemies[0].target === "locomotive",
+      );
+      const world = fresh();
+      const count = { locomotive: 0, wagon: 0 };
+      for (let i = 0; i < 2000; i++) {
+        const t = chooseTarget(world);
+        if (t) count[t]++;
+      }
+      check("REQ-ENM-002  Beide intakten Zugteile werden mit etwa gleicher Wahrscheinlichkeit gewählt", count.locomotive > 800 && count.wagon > 800 && count.locomotive + count.wagon === 2000);
+    }
+    {
+      const noLoco = fresh();
+      noLoco.locomotive.destroyed = true;
+      const noWagon = fresh();
+      noWagon.wagon.hp = 50;
+      noWagon.wagon.destroyed = true; // zerstört und in Reparatur: kein gültiges Ziel
+      let onlyWagon = true;
+      let onlyLoco = true;
+      for (let i = 0; i < 300; i++) {
+        if (chooseTarget(noLoco) !== "wagon") onlyWagon = false;
+        if (chooseTarget(noWagon) !== "locomotive") onlyLoco = false;
+      }
+      check("REQ-ENM-006  Eine zerstörte Lokomotive wird nie als Ziel gewählt", onlyWagon);
+      check("REQ-ENM-006  Ein zerstörter Wagon (auch in Reparatur) wird nie als Ziel gewählt, das Geschütz nie", onlyLoco);
+      const none = fresh();
+      none.locomotive.destroyed = true;
+      none.wagon.destroyed = true;
+      let calls = 0;
+      none.random = () => {
+        calls++;
+        return 0.5;
+      };
+      check("REQ-ENM-008  Ohne intakte Zugteile gibt es kein Ziel (null) und keine Zielsuche", chooseTarget(none) === null && calls === 0);
+    }
+
+    // 8: Zielwechsel bei Zerstörung
+    {
+      const world = fresh();
+      world.enemies.push(enemy(1, 800, 300, "wagon"), enemy(2, 300, 300, "locomotive"));
+      damageTrainPart(world, "wagon", 1000);
+      const before = { x: world.enemies[0].x, y: world.enemies[0].y };
+      run(world, 1);
+      const e = world.enemies[0];
+      check("REQ-ENM-008  Wird das Ziel zerstört, wählt der Gegner im selben Schritt ein neues intaktes Ziel", e.target === "locomotive" && world.enemies[1].target === "locomotive");
+      check("REQ-ENM-008  Die Bewegung geht von der aktuellen Position zum neuen Ziel weiter", near(Math.hypot(e.x - before.x, e.y - before.y), speedStep) && e.x < before.x);
+    }
+    {
+      const world = fresh();
+      world.wagon.hp = 10;
+      world.enemies.push(enemy(1, 800, 300, "wagon"), enemy(2, 800, 640, "wagon"));
+      run(world, 1);
+      check(
+        "REQ-ENM-008  Zerstört ein Gegner das Ziel eines anderen, wechselt dieser im selben Schritt (auch bei späterer Listenposition)",
+        world.wagon.destroyed && world.enemies.length === 1 && world.enemies[0].id === 1 && world.enemies[0].target === "locomotive",
+      );
+    }
+    {
+      const world = fresh();
+      world.enemies.push(enemy(1, 800, 300, "wagon"));
+      damageTrainPart(world, "wagon", 1000);
+      damageTrainPart(world, "locomotive", 1000);
+      const before = { x: world.enemies[0].x, y: world.enemies[0].y };
+      run(world, 5);
+      check("REQ-ENM-008  Sind alle Teile zerstört, gibt es kein Ziel mehr, der Gegner bleibt stehen und nichts bricht", world.enemies[0].target === null && world.enemies[0].x === before.x && world.enemies[0].y === before.y);
+    }
+
+    // 9 bis 12: Erreichen des Zuges
+    for (const part of ["wagon", "locomotive"] as const) {
+      const world = fresh();
+      const rect = (part === "wagon" ? world.wagon : world.locomotive).rect;
+      world.enemies.push(enemy(1, rect.x + rect.w / 2, LAYOUT.trainTopY - 20, part));
+      let steps = 0;
+      while (world.enemies.length > 0 && steps < 100) {
+        run(world, 1);
+        steps++;
+      }
+      const hit = part === "wagon" ? world.wagon : world.locomotive;
+      const other = part === "wagon" ? world.locomotive : world.wagon;
+      check(`REQ-ENM-003  Gegner erreicht ${part === "wagon" ? "den Wagon" : "die Lokomotive"} nach etwa 30 Schritten`, steps >= 29 && steps <= 32);
+      check(`REQ-ENM-003  Beim Erreichen ${part === "wagon" ? "des Wagons" : "der Lokomotive"} werden genau 10 HP Schaden verursacht`, hit.hp === 90 && other.hp === 100 && !hit.destroyed);
+      check(
+        `REQ-ENM-003  Gegner verschwindet, zählt als erreicht, Ereignis und Statistik (${part})`,
+        world.enemies.length === 0 && world.stats.reachedTrain === 1 && world.stats.damageByPart[part] === 10 && world.stats.damageByPart[part === "wagon" ? "locomotive" : "wagon"] === 0,
+      );
+    }
+    {
+      const world = fresh();
+      world.enemies.push(enemy(1, 800, 625, "wagon"));
+      run(world, 1);
+      check("REQ-ENM-003  Das Ereignis enemyReachedTrain wird erzeugt", world.events.some((e) => e.type === "enemyReachedTrain" && e.enemyId === 1 && e.part === "wagon"));
+      run(world, 300);
+      check("REQ-ENM-003  Ein Gegner verursacht nicht mehrfach Schaden (auch nach 300 weiteren Schritten)", world.wagon.hp === 90 && world.stats.reachedTrain === 1);
+    }
+    {
+      const world = fresh();
+      world.enemies.push(enemy(1, 800, 625, "wagon"), enemy(2, 820, 625, "wagon"), enemy(3, 400, 625, "locomotive"));
+      run(world, 1);
+      check("REQ-ENM-003  Jeder Gegner verursacht genau einmal 10 Schaden (2 am Wagon: 80, 1 an der Lokomotive: 90)", world.wagon.hp === 80 && world.locomotive.hp === 90 && world.stats.reachedTrain === 3 && world.enemies.length === 0);
+    }
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      world.wagon.destroyed = true;
+      world.enemies.push(enemy(1, 800, 650, "wagon"));
+      run(world, 1);
+      check("REQ-ENM-006  Ein Gegner im Rechteck eines zerstörten Teils (in Reparatur) verursacht dort keinen Schaden und wählt neu", world.wagon.hp === 50 && world.stats.damageByPart.wagon === 0 && world.enemies[0].target === "locomotive");
+    }
+
+    // 13: Statistik im Gesamtlauf ohne Verteidigung
+    {
+      const world = fresh("gemuetlich");
+      run(world, 9000);
+      const damage = world.stats.damageByPart.locomotive + world.stats.damageByPart.wagon;
+      check(
+        "REQ-STA-001  Statistik im Gesamtlauf: 25 gespawnt, 20 erreicht, Schaden 200 = 10 je Ankunft, beide Teile zerstört",
+        world.stats.spawned === 25 && world.stats.reachedTrain === 20 && damage === 200 && world.locomotive.destroyed && world.wagon.destroyed && world.turret.destroyed,
+      );
+      check("REQ-ENM-008  Gegner ohne Ziel bleiben übrig, ohne weiteren Schaden (5 Gegner, kein Ziel)", world.enemies.length === 5 && world.enemies.every((e) => e.target === null) && world.status === "running");
+    }
+
+    // 14: Spieler und Gegner behindern sich nicht
+    {
+      const near1 = fresh();
+      const far = fresh();
+      near1.player.x = 500;
+      near1.player.y = 250;
+      far.player.x = 1200;
+      far.player.y = 100;
+      near1.enemies.push(enemy(1, 500, 250, "wagon"));
+      far.enemies.push(enemy(1, 500, 250, "wagon"));
+      run(near1, 60);
+      run(far, 60);
+      check("REQ-PLR-004  Ein Spieler auf dem Gegnerweg verändert die Gegnerbewegung nicht", near(near1.enemies[0].x, far.enemies[0].x) && near(near1.enemies[0].y, far.enemies[0].y));
+      const walker = fresh();
+      const alone = fresh();
+      walker.enemies.push(enemy(1, 640, 360, "wagon"), enemy(2, 650, 350, "locomotive"));
+      for (let i = 0; i < 60; i++) {
+        stepWorld(walker, { x: 1, y: 0 }, dt);
+        stepWorld(alone, { x: 1, y: 0 }, dt);
+      }
+      check("REQ-PLR-004  Gegner auf dem Spieler behindern ihn nicht und bleiben in der Liste (Überschneidung erlaubt)", near(walker.player.x, alone.player.x) && near(walker.player.y, alone.player.y) && walker.enemies.length === 2);
+    }
+    check("REQ-ENM-007  Alle Gegner haben denselben Typ (feste HP-Konfiguration)", (() => {
+      const world = fresh();
+      world.timeMs = 200000;
+      spawnEnemies(world);
+      return world.enemies.length === 40 && world.enemies.every((e) => e.hp === TESTWERTE.enemy.hp);
+    })());
   }
 
   // --- Konfiguration (REQ-ARC-004)
