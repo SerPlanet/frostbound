@@ -11,9 +11,9 @@
 4. Halte dich an den Nicht-Umfang in [prototype/scope.md](prototype/scope.md).
 5. Bei Widersprüchen zwischen Dokumenten gilt das [Entscheidungsprotokoll](project/decision-log.md). Melde den Widerspruch.
 6. Ändere Dokumente nur, wenn der Auftrag das vorsieht, und halte dich an [project/process.md](project/process.md).
-
 7. Vor Abschluss: Prüfe sämtliche Akzeptanzkriterien der betroffenen `REQ-…`-Anforderungen, führe die Testfälle aus (automatisiert, sonst manuell beschrieben) und liste nicht erfüllte Kriterien im Abschlussbericht. Subjektive Kriterien (Spielspaß, Spannung, visuelle Qualität) sind menschliche Bewertungsaufgaben und werden nie von dir als erfüllt erklärt.
 8. Berichte getrennt: „technisch abgeschlossen“ (Definition of Done), „erfolgreich getestet“ (Tests bestanden, mit Nachweis). „Inhaltlich akzeptiert“ kann nur der Projektverantwortliche feststellen. Siehe [project/process.md](project/process.md), Abschnitt „Definition of Done“.
+9. Git: Normale, geprüfte und getestete Änderungen dürfen in `main`. Größere Architekturänderungen und Änderungen an CONFIRMED-Spielregeln nur nach vorheriger Freigabe des Projektverantwortlichen. Experimentelles bleibt auf separaten Branches (siehe [project/process.md](project/process.md)).
 
 ## Aufgabe → zu lesende Dokumente
 

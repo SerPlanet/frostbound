@@ -18,7 +18,8 @@ Der Zug steht im Zentrum (D-004). Gegner laufen von der Gegenseite auf den Zug z
 ## Offen
 
 - OPEN: Position und Abmessungen des Spielfelds, Seite des Zuges (Q-011, Q-017).
-- OPEN: Spawnintervalle (Q-002), Zusammensetzung größerer Gruppen (Q-003), Dauer/Zeitplan, Pausenlänge, Zeitpunkt der Welle (Q-018).
+- CONFIRMED: Eine feste Spieldauer ist nicht die Grundlage für den Erfolg des Prototyps. Stattdessen wird die Gesamtzahl der Gegner festgelegt, sie kann je nach Schwierigkeitsgrad variieren. Spawnverteilung, Angriffsintensität, größere Gegnergruppen und kurze Pausen bestimmen den Verlauf (D-031).
+- OPEN: Konkrete Gesamtzahl der Gegner (Q-001), Spawnintervalle und Spawnverteilung (Q-002), Zusammensetzung größerer Gruppen (Q-003), Zeitpunkt der großen Welle sowie Zeitpunkt und Länge der Pausen, genauer Zeitplan (Q-018).
 
 ## Anforderungen
 
@@ -33,12 +34,12 @@ Der Zug steht im Zentrum (D-004). Gegner laufen von der Gegenseite auf den Zug z
 
 ### REQ-CORE-002 – Kontinuierlicher Gegnerstrom mit variierender Intensität
 - **Problemstellung:** Der Angriffsverlauf muss reproduzierbar prüfbar sein, obwohl Zahlen offen sind.
-- **Ziel:** Gegner erscheinen über die Runde fortlaufend, die Intensität schwankt.
-- **Gewünschtes Verhalten:** Ein Wellenplan (Datenstruktur) bestimmt, wann wie viele Gegner spawnen. Er enthält Phasen unterschiedlicher Intensität, größere Gruppen und optionale kurze Pausen vor großen Angriffen.
-- **Akzeptanzkriterien:** (1) Spawns werden ausschließlich vom konfigurierbaren Wellenplan gesteuert. (2) Der Plan kann Phasen mit unterschiedlicher Spawnrate abbilden. (3) Der Plan kann eine Pause vor einer Gruppe abbilden. (4) Der Plan enthält für den Prototyp genau eine größere Angriffswelle, ohne Bossmechanik. (5) Konkrete Zahlen kommen aus Konfiguration, nicht aus dem Code.
+- **Ziel:** Eine festgelegte Gesamtzahl Gegner erscheint fortlaufend, die Intensität schwankt. Die Spieldauer ist nicht die Grundlage (D-031).
+- **Gewünschtes Verhalten:** Ein Wellenplan (Datenstruktur) bestimmt die Gesamtzahl der Gegner und wann wie viele spawnen. Er enthält Phasen unterschiedlicher Intensität, größere Gruppen und optionale kurze Pausen vor großen Angriffen.
+- **Akzeptanzkriterien:** (1) Spawns werden ausschließlich vom konfigurierbaren Wellenplan gesteuert. Die Gesamtzahl der Gegner ist im Plan festgelegt und stammt aus der Konfiguration des aktiven Schwierigkeitsgrads. Es gibt keine feste Spieldauer als Erfolgs- oder Endkriterium. (2) Der Plan kann Phasen mit unterschiedlicher Spawnrate abbilden. (3) Der Plan kann eine Pause vor einer Gruppe abbilden. (4) Der Plan enthält für den Prototyp genau eine größere Angriffswelle, ohne Bossmechanik. (5) Konkrete Zahlen kommen aus Konfiguration, nicht aus dem Code.
 - **Testfälle:** auto: Mit einem Test-Wellenplan (Testdaten, nicht Spielwerte) wird die Anzahl und der Zeitpunkt der Spawns gegen den Plan geprüft. auto: Plan mit Pause erzeugt im Pausenintervall keine Spawns. manuell: Beschreibung der Welle im Greybox-Lauf beobachten.
-- **Abhängigkeiten:** [enemies.md](enemies.md), [difficulty.md](difficulty.md); Q-002, Q-003, Q-018 für Werte.
-- **Entscheidungsstatus:** CONFIRMED (Struktur, D-017, D-019); OPEN (Zahlen).
+- **Abhängigkeiten:** [enemies.md](enemies.md), [difficulty.md](difficulty.md); Q-001, Q-002, Q-003, Q-018 für Werte.
+- **Entscheidungsstatus:** CONFIRMED (Struktur, D-017, D-019, D-031); OPEN (Zahlen).
 
 ### REQ-CORE-003 – Zugorientierte Kernschleife
 - **Problemstellung:** Das Spiel muss durch den Zug definiert sein (D-004).

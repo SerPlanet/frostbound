@@ -8,12 +8,14 @@
 
 - CONFIRMED: Der Spieler kann nicht sterben (D-011). Eine Niederlage durch Spielertod gibt es daher nicht.
 - CONFIRMED: Der Prototyp hat eine größere Angriffswelle (D-019).
+- CONFIRMED: Eine feste Spieldauer ist nicht die Grundlage für den Erfolg des Prototyps (D-031). Die Gegnergesamtzahl wird festgelegt (je Schwierigkeitsgrad variabel).
 
 ## Offen
 
 - OPEN: Exakte Siegbedingung (Q-008), z. B. ob Überleben der Welle genügt, ist nicht entschieden.
 - OPEN: Exakte Niederlagebedingung (Q-008). Ob und wann der Zug „zerstört“ ist und was dann passiert, steht nicht fest, ebenso Q-007.
-- OPEN: Rundenlänge und Rundenende (Q-018).
+- OPEN: Ob und wie das Ende einer Runde mit der festgelegten Gegnergesamtzahl zusammenhängt. Das gehört zur Sieg-/Niederlagebedingung (Q-008).
+- OPEN: Zeitpunkt der großen Welle und der Pausen (Q-018).
 - OPEN: Anzeige von Sieg/Niederlage (UI, nicht festgelegt).
 
 ## Anforderungen
@@ -34,4 +36,4 @@
 - **Akzeptanzkriterien:** (1) Bedingungen sind als Schnittstelle gekapselt. (2) Es gibt keine fest verdrahtete Sieg-/Niederlagebedingung ohne Entscheidung zu Q-008. (3) Tests verwenden ausdrücklich im Test definierte Beispielregeln.
 - **Testfälle:** auto: Testregel „Ende nach N Ticks“ beendet die Runde mit dem Testergebnis.
 - **Abhängigkeiten:** Q-008.
-- **Entscheidungsstatus:** OPEN (die konkrete Regel). Schnittstelle: Vorschlag, PROPOSED.
+- **Entscheidungsstatus:** OPEN (die konkrete Regel). Schnittstelle: Vorschlag, PROPOSED. Eine zeitbasierte Siegbedingung (z. B. „überlebe X Sekunden“) darf nicht als Standard angenommen werden (D-031).

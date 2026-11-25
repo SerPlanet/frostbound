@@ -7,11 +7,11 @@
 ## Bestätigte Regeln
 
 - CONFIRMED: Es gibt drei Schwierigkeitsgrade: **Gemütlich**, **Normal**, **Winterhart** (D-021).
-- CONFIRMED: Sie beeinflussen unter anderem die Gegneranzahl (D-021).
+- CONFIRMED: Sie beeinflussen unter anderem die Gegneranzahl (D-021). Die Gesamtzahl der Gegner wird festgelegt und kann je Schwierigkeitsgrad variieren (D-031).
 
 ## Offen
 
-- OPEN: Exakte Gegneranzahl pro Grad (Q-001) und alle weiteren Werte.
+- OPEN: Konkrete Gesamtzahl der Gegner pro Grad (Q-001) und alle weiteren Werte.
 - OPEN: Ob außer der Gegneranzahl weitere Parameter beeinflusst werden („unter anderem“ ist bestätigt, die Liste nicht), Q-019.
 - OPEN: Wie der Grad gewählt wird (Q-019). Standardgrad: OPEN.
 - OPEN: Reihenfolge/Beziehung der Schwierigkeit (z. B. Gemütlich < Normal < Winterhart) ist durch die Namensreihenfolge nahegelegt, aber nicht ausdrücklich bestätigt.
@@ -29,7 +29,7 @@
 
 ### REQ-DIF-002 – Gegneranzahl hängt vom Grad ab
 - **Problemstellung:** Schwierigkeit soll die Gegneranzahl beeinflussen.
-- **Ziel:** Die Gegneranzahl ist pro Profil konfigurierbar.
+- **Ziel:** Die Gesamtzahl der Gegner ist pro Profil konfigurierbar.
 - **Gewünschtes Verhalten:** Der Wellenplan bezieht die Gegneranzahl aus dem aktiven Profil.
 - **Akzeptanzkriterien:** (1) Wechsel des Profils kann die erzeugte Gegneranzahl ändern. (2) Konkrete Anzahlen stehen ausschließlich in Konfigurationsdaten. (3) Es sind keine Anzahlen als Spielwerte dokumentiert, solange Q-001 offen ist.
 - **Testfälle:** auto: Mit Testprofilen (Testdaten) A und B mit unterschiedlicher Anzahl werden entsprechend unterschiedlich viele Spawns erzeugt.

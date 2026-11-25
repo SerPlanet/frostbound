@@ -32,6 +32,10 @@ Ob der Prototyp „Spaß macht“ oder „spannend“ ist, ist eine **menschlich
 - Finale Grafiken, Assets, Audio.
 - Upgrade- und Progressionssysteme (Q-012, OPEN).
 
+## Nicht Grundlage des Erfolgs
+
+Eine feste Spieldauer ist ausdrücklich nicht die Grundlage für den Erfolg des Prototyps. Der Verlauf beruht auf der festgelegten Gegnergesamtzahl (je Schwierigkeitsgrad variabel), Spawnverteilung, Intensität, Gruppen und Pausen (CONFIRMED: D-031).
+
 ## Offen
 
 Alle in [../open-questions.md](../open-questions.md) gelisteten Punkte, insbesondere Zahlenwerte, Gegnertypen, Ressourcen, Zuglebenspunkte, Sieg/Niederlage und Spielfeldmaße.

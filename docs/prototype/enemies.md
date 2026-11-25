@@ -16,7 +16,8 @@
 - OPEN: Gegnertypen und -werte (Lebenspunkte, Tempo, Schaden), Q-004.
 - OPEN: Was „Zugziele“ sind und nach welcher Regel gewählt wird, Q-014.
 - OPEN: Interaktion mit dem Spieler (Blockieren, Kontakt), Q-015.
-- OPEN: Gegneranzahl pro Schwierigkeit (Q-001), Spawnintervalle (Q-002), Gruppen (Q-003).
+- CONFIRMED: Die Gesamtzahl der Gegner wird festgelegt und kann je Schwierigkeitsgrad variieren (D-031).
+- OPEN: Konkrete Gesamtzahl pro Schwierigkeit (Q-001), Spawnintervalle und -verteilung (Q-002), Gruppen (Q-003).
 - Hinweis: „Theoretisch außerhalb des sichtbaren Bereichs“ bedeutet, dass das erlaubt ist. Ob es im Prototyp tatsächlich genutzt wird, ist nicht festgelegt (OPEN, Q-011).
 
 ## Anforderungen

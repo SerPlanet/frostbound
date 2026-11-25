@@ -7,7 +7,7 @@
 ## Bestätigte Regeln
 
 - CONFIRMED: Bewegung über WASD und Pfeiltasten (D-007).
-- CONFIRMED: Der Spieler greift automatisch an (D-008). Details siehe combat.md.
+- CONFIRMED: Der Spieler besitzt einen eigenen automatischen Angriff, unabhängig vom Zuggeschütz (D-008, D-030). Details siehe combat.md.
 - CONFIRMED: Der Spieler kann nicht sterben (D-011).
 - CONFIRMED: Bauen und Reparieren durch Nähe, ohne zusätzliche Taste. Entfernt sich der Spieler, pausiert der Arbeitsfortschritt (D-020).
 
@@ -15,7 +15,7 @@
 
 - OPEN: Bewegungsgeschwindigkeit und Spielerwerte (nicht festgelegt).
 - OPEN: Reparaturgeschwindigkeit (Q-009), Baufunktionen (Q-010, Q-022), Nähe-Radius.
-- OPEN: Verhältnis Spielerangriff zu Zuggeschütz (Q-013); ob Gegner den Spieler behindern (Q-015).
+- OPEN: Reichweite und Zielwahl des Spielerangriffs (Q-005); ob Gegner den Spieler behindern (Q-015).
 
 ## Anforderungen
 

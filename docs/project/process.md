@@ -62,11 +62,31 @@ Drei Stufen sind getrennt zu benennen und nicht gleichzusetzen:
 
 Ein Agent berichtet höchstens „technisch abgeschlossen“ und „erfolgreich getestet“. „Inhaltlich akzeptiert“ erklärt er nie selbst.
 
-## Entwicklungsprozess
+## Entwicklungsprozess (CONFIRMED: D-032)
 
-Der Prozess ist bislang nicht ausdrücklich bestätigt. Alle Punkte sind daher PROPOSED:
+Die folgende Reihenfolge ist verbindlich:
 
-- PROPOSED: Zuerst Design und Dokumentation, dann Umsetzung. Offene Fragen, die eine Umsetzung blockieren, werden vorher geklärt.
-- PROPOSED: Agenten erhalten ein gezieltes Dokumentenset gemäß [agent-guide.md](../agent-guide.md).
-- PROPOSED: Jede Umsetzung wird gegen die Akzeptanzkriterien des Fachdokuments geprüft. Wo noch keine festgelegt sind, wird das ausdrücklich genannt.
-- PROPOSED: Änderungen werden in nachvollziehbaren Commits festgehalten. Ein Branch-Modell ist OPEN (Q-021).
+1. GitHub-Repository einrichten. (erledigt)
+2. Dokumentation erstellen und vervollständigen. (aktuell)
+3. Prototyp auf Grundlage der Dokumentation entwickeln.
+4. Nutzerfeedback einholen.
+5. Prototyp anhand des Feedbacks verbessern. Die Schritte 4 und 5 werden wiederholt, bis der Projektverantwortliche zufrieden ist.
+6. Vollständiges Spiel durchplanen und spezifizieren.
+7. Vollständige Umsetzung anhand der finalen Dokumentation.
+
+Konsequenzen für Agenten:
+
+- Code für den Prototyp entsteht erst nach Schritt 2 und auf Grundlage der Dokumentation. Das Gesamtspiel (Adventskalender) wird erst in Schritt 6 spezifiziert und in Schritt 7 umgesetzt.
+- Agenten erhalten ein gezieltes Dokumentenset gemäß [agent-guide.md](../agent-guide.md).
+- Jede Umsetzung wird gegen die Akzeptanzkriterien des Fachdokuments geprüft (siehe Definition of Done oben).
+
+## Git- und Merge-Regeln (CONFIRMED: D-033)
+
+Standardbranch ist `main`.
+
+- Normale Änderungen dürfen nach erfolgreicher Prüfung und bestandenen Tests selbstständig in `main` übernommen werden.
+- Größere Architekturänderungen werden **vor der Umsetzung** mit dem Projektverantwortlichen abgestimmt.
+- Änderungen an bestätigten Spielregeln (CONFIRMED-Einträge) benötigen **vorherige Freigabe**.
+- Experimentelle Arbeiten bleiben auf separaten Branches, bis sie ausreichend geprüft wurden.
+- Commits werden nachvollziehbar beschrieben. Weitere Git-Regeln sind nicht festgelegt.
+- Zugangsdaten und Tokens gehören nie ins Repository.
