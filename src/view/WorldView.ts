@@ -61,14 +61,14 @@ export class WorldView {
   constructor(scene: Phaser.Scene) {
     this.g = scene.add.graphics();
     const label = (text: string, size: string, color: string): Phaser.GameObjects.Text =>
-      scene.add.text(0, 0, text, { fontFamily: "Arial, sans-serif", fontSize: size, color, align: "center" }).setOrigin(0.5);
+      scene.add.text(0, 0, text, { fontFamily: "Arial, sans-serif", fontSize: size, color }).setOrigin(0.5);
     this.partLabels = {
       locomotive: label("LOKOMOTIVE", "20px", "#ffffff"),
       wagon: label("WAGON", "20px", "#ffffff"),
     };
     this.zoneLabels = {
-      locomotive: label("REPARATUR-\nZONE", "16px", "#b8ecff"),
-      wagon: label("REPARATUR-\nZONE", "16px", "#b8ecff"),
+      locomotive: label("REPARATURZONE", "16px", "#b8ecff"),
+      wagon: label("REPARATURZONE", "16px", "#b8ecff"),
     };
   }
 

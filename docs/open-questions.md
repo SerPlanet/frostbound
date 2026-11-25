@@ -34,7 +34,7 @@ Diese Punkte sind pragmatisch festgelegt, damit die Implementierung starten kann
 | Q-005 (Teil) | Was ist für das Geschütz „geeignet“, was ist der Bezugspunkt für „nächstes“ Ziel | geeignet = lebender Gegner im Spielfeld. Bezugspunkt = Position des Geschützes (TECH-05) |
 | Q-028 | Trefferart | Soforttreffer ohne Projektil, kurze Trefferlinie nur als Darstellung (TECH-06) |
 | Q-023 (Teil) | Wahrscheinlichkeiten und Treffpunkt der Zielwahl | gleiche Wahrscheinlichkeit je verfügbarem intakten Zugteil, „erreicht“ = Gegnerposition innerhalb des Zugteil-Rechtecks (TECH-07) |
-| Q-026 | Reparaturzonen: Form, Größe, Lage | Rechtecke oberhalb der Zugteile, nicht überlappend (TECH-09). Balance-Teststand 3: vorläufig nach außen versetzt (140 breit), siehe architecture.md |
+| Q-026 | Reparaturzonen: Form, Größe, Lage | Rechtecke oberhalb der Zugteile, nicht überlappend (TECH-09). Balance-Teststand 4: Länge wie ursprünglich, Höhe vorläufig 60 statt 120 (TESTWERT), siehe architecture.md |
 | Q-011 | Spielfeldmaße, Hindernisse | logische Größe 1280×720, keine Hindernisse (TECH-01) |
 | Q-019 | Weitere von der Schwierigkeit beeinflusste Werte, voreingestellter Grad | Nur die Wellenplan-Daten (Gesamtzahl) unterscheiden sich, keine Voreinstellung (TECH-12) |
 | Q-029 | HUD-Inhalte, Startbildschirm-Details | HUD siehe TECH-11 |

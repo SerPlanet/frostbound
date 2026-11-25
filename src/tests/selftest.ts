@@ -81,25 +81,40 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
   check("REQ-TRN-002  Zug liegt im Zugbereich am unteren Rand", w.locomotive.rect.y >= LAYOUT.trainTopY && w.wagon.rect.y >= LAYOUT.trainTopY);
   check("REQ-REP-004  Reparaturzonen überlappen nicht", !overlaps(w.locomotive.zone, w.wagon.zone));
   {
-    // Balance-Teststand 3: Zonen nach außen versetzt
+    // Balance-Teststand 4: Zonen in ursprünglicher Länge und Lage, aber nur 60 statt 120 hoch
     const wz = w.wagon.zone;
     const lz = w.locomotive.zone;
-    check("Teststand 3  Wagon-Zone: x 300 bis 440, y 500 bis 620 (140 breit)", wz.x === 300 && wz.x + wz.w === 440 && wz.y === 500 && wz.y + wz.h === 620 && wz.w === 140);
-    check("Teststand 3  Lokomotiv-Zone: x 840 bis 980, y 500 bis 620 (140 breit)", lz.x === 840 && lz.x + lz.w === 980 && lz.y === 500 && lz.y + lz.h === 620 && lz.w === 140);
-    const inField = (r: Rect): boolean => r.x >= 0 && r.y >= 0 && r.x + r.w <= LAYOUT.field.width && r.y + r.h <= LAYOUT.field.height;
-    check("Teststand 3  Beide Zonen liegen im Spielfeld, enden am Zugbereich und liegen über ihrem Zugteil (Wagon links, Lokomotive rechts)", inField(wz) && inField(lz) && wz.y + wz.h <= LAYOUT.trainTopY && lz.y + lz.h <= LAYOUT.trainTopY && wz.x >= w.wagon.rect.x - 100 && wz.x + wz.w <= w.wagon.rect.x + w.wagon.rect.w && lz.x >= w.locomotive.rect.x && lz.x + lz.w <= w.locomotive.rect.x + w.locomotive.rect.w + 100);
-    // Der Spieler kann jeden Punkt beider Zonen betreten (begehbar bis y = 620 minus Radius, Zonenmitte liegt darin)
+    check("Teststand 4  Wagon-Zone: x 340 bis 620 (280 lang, wie ursprünglich), y 560 bis 620 (60 hoch, vorher 120)", wz.x === 340 && wz.x + wz.w === 620 && wz.w === 280 && wz.y === 560 && wz.y + wz.h === 620 && wz.h === 60);
+    check("Teststand 4  Lokomotiv-Zone: x 660 bis 940 (280 lang, wie ursprünglich), y 560 bis 620 (60 hoch, vorher 120)", lz.x === 660 && lz.x + lz.w === 940 && lz.w === 280 && lz.y === 560 && lz.y + lz.h === 620 && lz.h === 60);
+    check("Teststand 4  Die Zonen sind horizontal so lang und so gelegen wie ihr Zugteil und schließen unten mit dem Zugbereich ab", wz.x === w.wagon.rect.x && wz.w === w.wagon.rect.w && lz.x === w.locomotive.rect.x && lz.w === w.locomotive.rect.w && wz.y + wz.h === LAYOUT.trainTopY && lz.y + lz.h === LAYOUT.trainTopY);
+    // Der Spieler kann die Zonen betreten: begehbar bis y = 620 minus Radius, also liegt ein Streifen der Zone im begehbaren Bereich
     const reachY = LAYOUT.trainTopY - LAYOUT.playerRadius;
-    check("Teststand 3  Beide Zonen sind für den Spieler erreichbar (Zonenmitte im begehbaren Bereich)", wz.y + wz.h / 2 <= reachY && lz.y + lz.h / 2 <= reachY && wz.x + wz.w / 2 >= LAYOUT.playerRadius && lz.x + lz.w / 2 <= LAYOUT.field.width - LAYOUT.playerRadius);
-    // Keine Zone steht in der Reparatur-Reichweite der anderen: Position zwischen den Zonen repariert nichts
+    check("Teststand 4  Beide Zonen sind für den Spieler erreichbar (begehbarer Streifen y 560 bis 606, Mitte im begehbaren Bereich)", wz.y < reachY && lz.y < reachY && wz.y + wz.h / 2 <= reachY && lz.y + lz.h / 2 <= reachY);
+    const reach = createWorld("normal", makeTestRandom());
+    reach.spawnPlan = [{ atMs: 1e12, count: 1 }];
+    reach.wagon.hp = 50;
+    reach.locomotive.hp = 50;
+    reach.player.x = wz.x + wz.w / 2;
+    reach.player.y = reachY;
+    for (let i = 0; i < 400; i++) stepWorld(reach, { x: 0, y: 1 }, LAYOUT.stepMs); // gegen die untere Grenze laufen
+    check("Teststand 4  Am untersten begehbaren Punkt (y 606) steht der Spieler noch in der Wagon-Zone und repariert", reach.player.y === reachY && reach.activeRepair === "wagon" && reach.wagon.hp > 50);
+    // Zwischen den Zonen (x 640) wird nichts repariert
     const mid = createWorld("normal", makeTestRandom());
     mid.spawnPlan = [{ atMs: 1e12, count: 1 }];
     mid.wagon.hp = 50;
     mid.locomotive.hp = 50;
     mid.player.x = 640;
-    mid.player.y = 560;
+    mid.player.y = 590;
     for (let i = 0; i < 300; i++) updateRepair(mid, LAYOUT.stepMs);
-    check("Teststand 3  Zwischen den Zonen (x 640, y 560) findet keine Reparatur statt", mid.wagon.hp === 50 && mid.locomotive.hp === 50 && mid.activeRepair === null);
+    check("Teststand 4  Zwischen den Zonen (x 640) findet keine Reparatur statt", mid.wagon.hp === 50 && mid.locomotive.hp === 50 && mid.activeRepair === null);
+    // Oberhalb der Zone (y 540) wird nichts repariert
+    const above = createWorld("normal", makeTestRandom());
+    above.spawnPlan = [{ atMs: 1e12, count: 1 }];
+    above.wagon.hp = 50;
+    above.player.x = wz.x + wz.w / 2;
+    above.player.y = 540;
+    for (let i = 0; i < 300; i++) updateRepair(above, LAYOUT.stepMs);
+    check("Teststand 4  Oberhalb der Zone (y 540, früher noch innerhalb) wird nicht repariert", above.wagon.hp === 50 && above.activeRepair === null);
   }
   check("REQ-PLR-002  Spieler hat keine Lebenspunkte", !("hp" in w.player));
   check("REQ-PLR-001  Spieler startet an der konfigurierten Position", w.player.x === LAYOUT.playerStart.x && w.player.y === LAYOUT.playerStart.y);
@@ -952,8 +967,8 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     check("REQ-TRN-006  Die Lokomotive steht ganz rechts, alle Wagen links von ihr", loco.x >= wagon.x + wagon.w && loco.x > wagon.x && loco.x + loco.w <= LAYOUT.field.width);
     check("REQ-TRN-006  Das Geschütz sitzt auf dem Wagon und damit links von der Lokomotive", inside(world.turret.x, world.turret.y, wagon) && world.turret.x < loco.x);
     check(
-      "REQ-TRN-006  Reparaturzonen liegen über ihrem Teil, horizontal mit ihm überlappend (Wagon links, Lokomotive rechts, Teststand 3: über den äußeren Enden)",
-      world.wagon.zone.x < wagon.x + wagon.w && world.wagon.zone.x + world.wagon.zone.w > wagon.x && world.locomotive.zone.x < loco.x + loco.w && world.locomotive.zone.x + world.locomotive.zone.w > loco.x && world.wagon.zone.x < world.locomotive.zone.x && world.wagon.zone.y + world.wagon.zone.h === LAYOUT.trainTopY,
+      "REQ-TRN-006  Reparaturzonen liegen über ihrem Teil (Wagon links, Lokomotive rechts)",
+      world.wagon.zone.x === wagon.x && world.wagon.zone.w === wagon.w && world.locomotive.zone.x === loco.x && world.locomotive.zone.w === loco.w && world.wagon.zone.x < world.locomotive.zone.x && world.wagon.zone.y + world.wagon.zone.h === LAYOUT.trainTopY,
     );
     // Schadenszuordnung folgt dem Rechteck des Zielteils
     const hitWagon = createWorld("normal", makeTestRandom());
