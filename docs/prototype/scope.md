@@ -6,63 +6,61 @@
 
 ## Ziel
 
-Ein spielbarer erster Gameplay-Prototyp, der mit Greybox-Platzhaltern (einfachen geometrischen Formen) funktioniert (CONFIRMED: D-006, D-024). Er prüft die Kernschleife: Gegner laufen von oben auf den Zug zu, Spieler und Zuggeschütz wehren sie ab, der Spieler repariert den Zug. Die Prototyp-Entwicklung folgt dem bestätigten Prozess (D-032).
+Ein schnell spielbarer Gameplay-Prototyp, der ausschließlich dazu dient, die grundlegenden Spielmechaniken auszuprobieren und vom Nutzer beurteilen zu lassen. Er ist kein fertiges Spiel und kein verkleinertes Abbild der Vollversion (CONFIRMED: D-059, D-032). Er verwendet Greybox-Platzhalter (D-006, D-024, D-058).
 
 Ob der Prototyp „Spaß macht“ oder „spannend“ ist, ist eine **menschliche Bewertungsaufgabe** des Projektverantwortlichen und wird nie von einem Agenten als erfüllt erklärt.
 
 ## Im Umfang (CONFIRMED)
 
-- Top-Down-2D im Browser (D-001, D-002).
-- Zug am unteren Rand, still während der Runde, Spielbereich darüber (D-034). Eine Lokomotive und ein einzelner Wagon (D-005).
-- Greybox-Grafiken (D-006).
-- Spielerbewegung mit WASD und Pfeiltasten, freie Bewegung durch Gegner (D-007, D-035).
-- Zwei unabhängige automatische Angriffsquellen: Spieler (stark begrenzte Reichweite, Single Target) und Zuggeschütz (gesamtes Spielfeld) (D-030, D-036, D-037).
-- Genau ein Gegnertyp, zombieartige Bewegung, zufällige Zielwahl zwischen Lokomotive und Wagon, Schaden und Despawn (D-038 bis D-040, D-015).
-- Lebenspunkte je Zugteil, Funktionsverlust zerstörter Wagons (D-041).
-- Kostenloses Reparatursystem mit Reparaturbereichen und Prioritäten (D-043).
-- Sieg und Niederlage (D-042, D-044).
-- Gegnerverlauf: Gesamtzahl je Schwierigkeitsgrad, wachsende Intensität, größere Gruppen, Pausen, eine größere Angriffswelle (D-017, D-019, D-031, D-045).
+- Top-Down-2D im Browser, festes Seitenverhältnis 16:9, proportionale Skalierung, auflösungsunabhängige Spiellogik (D-001, D-002, D-058).
+- Der Zug: Lokomotive, ein Wagon, ein Geschütz auf dem Wagon. Er steht still am unteren Rand, der Spielbereich liegt darüber (D-034, D-054).
+- Lebenspunkte: Lokomotive 100, Wagon 100, Geschütz 20 (Startwerte, D-053).
+- Spieler: WASD und Pfeiltasten, feste Geschwindigkeit, diagonal gleich schnell, unsterblich, läuft frei durch Gegner, bleibt im Spielfeld und außerhalb des Zuges (D-007, D-011, D-035, D-057).
+- Zwei unabhängige automatische Angriffsquellen: Spieler (stark begrenzte Reichweite, Einzelziel) und Zuggeschütz (gesamtes Spielfeld) (D-030, D-036, D-037).
+- Genau ein Gegnertyp, zombieartige Bewegung, zufällige Zielwahl unter den intakten Zugteilen mit Neuwahl, 10 Schaden, dann Verschwinden (D-038, D-040, D-051, D-052).
+- Wagon-Geschütz-Abhängigkeit (D-055).
+- Kostenlose Reparatur in 5-HP-Schritten alle 5 Sekunden mit Reparaturzonen (D-056).
+- Sieg und Niederlage (D-050).
+- Gegnerverlauf: Gesamtzahl je Schwierigkeitsgrad, wachsende Intensität, Gruppen, Pausen, eine größere Welle (D-017, D-019, D-031, D-045).
 - Drei Schwierigkeitsgrade (D-021).
-- Einfacher Spielablauf mit Startbildschirm, Schwierigkeitswahl, HUD und Ergebnisbildschirm (D-047).
-- Rundenstatistik und einfaches Balance-Modell (D-048).
+- Startbildschirm mit Schwierigkeitswahl, HUD, Ergebnisbildschirm mit Statistik, Rückkehr zum Start (D-047, D-048).
 - Trennung von Gameplay, Darstellung und Szenen sowie separate Testmöglichkeiten (D-022 bis D-025).
 
 ## Optional (CONFIRMED als optional, niedrige Priorität)
 
-- Gegnerdrops und Einsammeln dürfen umgesetzt werden, dürfen den Kernprototyp aber nicht verzögern (D-046). Ob es sie gibt: OPEN (Q-006).
+- Gegnerdrops und Einsammeln, falls sie den Kernprototyp nicht verzögern (D-046). Im Implementierungsplan nicht enthalten.
 
-## Nicht im Umfang (CONFIRMED)
+## Nicht im Umfang (CONFIRMED, D-059)
 
-- Progressionsmechaniken: Ressourcen als Spielsystem, Belohnungen, Freischaltungen, Upgrades (D-046).
-- Adventskalender, Türchen, 24 Tage (D-027).
+- 24-Tage-Adventskalender (D-027).
+- Progression, Ressourcenwirtschaft, Upgrades, Belohnungssysteme.
+- Zusätzliche Waggons, zusätzliche Geschütze, Geschütz auf der Lokomotive.
+- Geschützangriffe durch spezielle Gegner (das Geschütz kann im Prototyp nicht direkt angegriffen werden).
+- Spätere besondere Gegnertypen, mehrere Gegnertypen, komplexe Bossmechaniken.
+- Vollständige Story, spätere Zug- und Lokomotiv-Upgrades.
+- Separate Geschützreparatur (D-055).
 - Überhitzung des Geschützes (D-010).
-- Komplexe Bossmechaniken (D-019).
-- Tod des Spielers (D-011).
-- Mehrere Gegnertypen (D-038).
-- Flächenangriffe und Angriffe auf mehrere Ziele: sind spätere Möglichkeiten (D-036).
-- Besondere Zusatzfunktion oder Waffen der Lokomotive: spätere Möglichkeit (D-041).
-- Komplexe Menüs und Progressionsbildschirme (D-047).
-- Eine Live-Entwickleransicht ist keine Priorität und nicht Teil des erforderlichen Umfangs (D-048).
-- Finale Grafiken: Der Prototyp verwendet Greybox (D-006).
+- Tod des Spielers, Spieler-Lebenspunkte (D-011, D-057).
+- Flächenangriffe und Mehrfachziele (D-036).
+- Komplexe Menüs, Progressionsbildschirme (D-047). Live-Entwickleransicht (D-048).
+- Finale Grafiken (D-006).
 
-## Nicht festgelegt (weder im noch außerhalb des Umfangs)
+Die Architektur darf Erweiterungen nicht unmöglich machen, bereitet sie aber nicht vor (D-059, D-060).
 
-- Audio (Q-032).
-- Upgrade- und Progressionssysteme des Vollspiels (Q-012). Die Frage bleibt offen. Die Progressionsmechaniken sind lediglich nicht Teil des Prototyps.
-- Bauen: Es ist durch Nähe bestätigt (D-020), aber was gebaut werden kann, ist OPEN (Q-010).
+## Nicht festgelegt
+
+- Audio ist weder bestätigt noch ausgeschlossen (Q-032). Es ist nicht im Implementierungsplan.
+- Bauen: durch Nähe bestätigt (D-020). Es gibt im Prototyp nichts zu bauen, siehe Q-010 (zur Bestätigung).
+- Upgrade- und Progressionssysteme des Vollspiels (Q-012) sind offen. Sie sind lediglich nicht Teil des Prototyps.
 
 ## Prototyp und Vollspiel
 
-Langzeitinhalte (Adventskalender, drei Ressourcen, Upgrades) stehen in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie sind nicht Teil dieser Spezifikation und erzeugen keine Prototyp-Anforderungen.
+Langzeitinhalte stehen nur in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie erzeugen keine Prototyp-Anforderungen.
 
-## Nicht Grundlage des Erfolgs
+## Erfolg
 
-Eine feste Spieldauer ist ausdrücklich nicht die Grundlage für den Erfolg des Prototyps. Der Verlauf beruht auf der festgelegten Gegnergesamtzahl (je Schwierigkeitsgrad variabel), Spawnverteilung, Intensität, Gruppen und Pausen (CONFIRMED: D-031).
+Der Prototyp ist technisch abgeschlossen, wenn alle `REQ-…`-Anforderungen seiner Fachdokumente die Definition of Done erfüllen ([../project/process.md](../project/process.md)). Eine feste Spieldauer ist nicht die Grundlage des Erfolgs (D-031). Die inhaltliche Abnahme erfolgt durch den Projektverantwortlichen im Feedbackprozess (D-032).
 
 ## Offen
 
-Alle in [../open-questions.md](../open-questions.md) gelisteten Punkte, insbesondere Zahlenwerte (Tuning), Geschütze (Q-025), Reparaturbereiche (Q-026) und Spielfeldmaße (Q-011).
-
-## Akzeptanz des Prototyps als Ganzes
-
-Der Prototyp gilt als technisch abgeschlossen, wenn alle `REQ-…`-Anforderungen seiner Fachdokumente die Definition of Done erfüllen ([../project/process.md](../project/process.md)). Die inhaltliche Abnahme erfolgt durch den Projektverantwortlichen im Feedbackprozess (D-032).
+Siehe [../open-questions.md](../open-questions.md). Es verbleiben Testwerte und wenige nicht blockierende Fragen.

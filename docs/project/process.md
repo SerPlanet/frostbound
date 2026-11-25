@@ -6,7 +6,7 @@
 
 ## Dokumentationsregeln
 
-Der Statuswortschatz CONFIRMED, PROPOSED, OPEN gilt für alle Designentscheidungen (CONFIRMED: D-028).
+Der Statuswortschatz CONFIRMED, PROPOSED, OPEN gilt für alle Designentscheidungen (CONFIRMED: D-028). Ergänzend gibt es TESTWERT (vorläufiger Zahlenwert, D-045) und TECH (technische Entscheidung des Agenten im Rahmen von D-060). Beide ändern keine bestätigte Gameplay-Regel.
 
 1. Eine Idee wird nicht bestätigt, nur weil sie in einem Gespräch erwähnt wurde. Bestätigt ist nur, was der Projektverantwortliche ausdrücklich bestätigt.
 2. Jedes Dokument hat einen eindeutigen Zweck, nennt Zielgruppe und Abhängigkeiten und ist eigenständig lesbar.

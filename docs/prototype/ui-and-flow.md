@@ -17,10 +17,8 @@ CONFIRMED: Keine komplexen Menüs und keine Progressionsbildschirme. Das HUD zei
 
 ## Offen
 
-- OPEN: Welche Informationen das HUD im Einzelnen zeigt (Q-029). Ein Vorschlag steht unten als PROPOSED.
-- OPEN: Details des Startbildschirms, ein voreingestellter Schwierigkeitsgrad, Darstellung der Rundenstatistik (Q-029, Q-019).
-- OPEN: Zielplattform, Auflösung, Eingabegeräte (Q-031).
-- OPEN: Pause, Abbruch einer laufenden Runde: nicht festgelegt und nicht Teil dieses Dokuments.
+- TECH (revidierbar): Inhalt des HUD (TECH-11), Eingabe auf dem Startbildschirm (TECH-12), Desktop-Browser mit Tastatur (TECH-02).
+- Pause oder Abbruch einer laufenden Runde: nicht festgelegt und nicht Teil dieses Dokuments.
 
 ## Anforderungen
 
@@ -37,10 +35,10 @@ CONFIRMED: Keine komplexen Menüs und keine Progressionsbildschirme. Das HUD zei
 - **Problemstellung:** Der Spieler muss einen der drei Schwierigkeitsgrade wählen können.
 - **Ziel:** Auswahl vor jedem Rundenstart.
 - **Gewünschtes Verhalten:** Der Startbildschirm bzw. die Auswahl bietet genau die Grade Gemütlich, Normal und Winterhart. Mit der Wahl startet die Runde mit dem gewählten Profil.
-- **Akzeptanzkriterien:** (1) Genau drei Grade sind wählbar, mit diesen Namen. (2) Die Runde verwendet das gewählte Profil (siehe REQ-DIF-001). (3) Ohne Wahl startet keine Runde. Ein Standardgrad ist OPEN und nicht vorgegeben.
+- **Akzeptanzkriterien:** (1) Genau drei Grade sind wählbar, mit diesen Namen. (2) Die Runde verwendet das gewählte Profil (siehe REQ-DIF-001). (3) Ohne Wahl startet keine Runde. Ein Standardgrad ist nicht vorgegeben.
 - **Testfälle:** auto: Wahl jedes Grades → aktives Profil entspricht der Wahl. manuell: Auswahl im Browser.
-- **Abhängigkeiten:** difficulty.
-- **Entscheidungsstatus:** CONFIRMED (D-047, D-021); OPEN (Standardgrad, Layout).
+- **Abhängigkeiten:** difficulty, architecture (TECH-12).
+- **Entscheidungsstatus:** CONFIRMED (D-047, D-021); TECH (Eingabeart, kein Standardgrad).
 
 ### REQ-FLOW-003 – Sieg- und Niederlagenbildschirm
 - **Problemstellung:** Das Rundenergebnis muss sichtbar werden.
@@ -48,15 +46,15 @@ CONFIRMED: Keine komplexen Menüs und keine Progressionsbildschirme. Das HUD zei
 - **Gewünschtes Verhalten:** Bei Sieg oder Niederlage erscheint ein Bildschirm, der das Ergebnis benennt und die Rundenstatistik (siehe REQ-STA-001) zeigt. Von dort geht es zum Startbildschirm.
 - **Akzeptanzkriterien:** (1) Der Bildschirm zeigt eindeutig „Sieg“ bzw. „Niederlage“ entsprechend dem Rundenergebnis. (2) Die Statistik wird auf diesem Bildschirm angezeigt. (3) Es gibt einen Weg zurück zum Startbildschirm.
 - **Testfälle:** auto: Ergebnis „Sieg“ bzw. „Niederlage“ → entsprechender Zustand mit Statistikdaten. manuell: beide Bildschirme ansehen.
-- **Abhängigkeiten:** win-lose, balance-and-statistics (REQ-STA-001).
-- **Entscheidungsstatus:** CONFIRMED (D-047, D-048); OPEN (Darstellungsdetails, Q-029).
+- **Abhängigkeiten:** win-lose (REQ-WL-002, REQ-WL-003), balance-and-statistics (REQ-STA-001).
+- **Entscheidungsstatus:** CONFIRMED (D-047, D-048); TECH (Darstellung).
 
 ### REQ-HUD-001 – Minimales HUD
 - **Problemstellung:** Der Spieler braucht die wichtigsten Informationen während der Runde.
 - **Ziel:** Ein einfaches HUD ohne komplexe Anzeigen.
 - **Gewünschtes Verhalten:** Das HUD zeigt nur wenige, wichtige Informationen. Es liest den Gameplay-Zustand und verändert ihn nicht.
-- **Akzeptanzkriterien:** (1) Das HUD enthält nur die in diesem Dokument oder später freigegebene Informationen. (2) Das HUD verändert keinen Spielzustand. (3) Das HUD funktioniert in der Greybox ohne Grafikassets.
-- **Vorschlag (PROPOSED, nicht umsetzen ohne Freigabe):** Lebenspunkte je Zugteil und Anzahl noch ausstehender Gegner. Weitere Anzeigen (z. B. Schwierigkeitsgrad, Reparaturfortschritt) sind OPEN.
+- **Akzeptanzkriterien:** (1) Das HUD enthält nur die unter „Inhalt“ genannten Informationen. (2) Das HUD verändert keinen Spielzustand. (3) Das HUD funktioniert in der Greybox ohne Grafikassets.
+- **Inhalt (TECH-11, revidierbar):** Lebenspunkte von Lokomotive und Wagon, Zustand des Geschützes (funktionsfähig oder zerstört), Anzahl noch nicht abgearbeiteter Gegner, gewählter Schwierigkeitsgrad. Reparaturzonen und Reparaturfortschritt zeigt die Spielfeldansicht.
 - **Testfälle:** auto: HUD-Daten entsprechen dem Gameplay-Zustand zu einem Zeitpunkt. manuell: HUD ansehen. menschl. Bewertung: ob die Informationen „die wichtigsten“ sind und gut lesbar, bewertet der Projektverantwortliche.
-- **Abhängigkeiten:** architecture (REQ-ARC-001), Q-029.
-- **Entscheidungsstatus:** CONFIRMED (Prinzip, D-047); PROPOSED/OPEN (Inhalt, Q-029).
+- **Abhängigkeiten:** architecture (REQ-ARC-001).
+- **Entscheidungsstatus:** CONFIRMED (Prinzip, D-047); TECH (Inhalt).

@@ -9,26 +9,26 @@
 - CONFIRMED: Es gibt drei Schwierigkeitsgrade: **Gemütlich**, **Normal**, **Winterhart** (D-021).
 - CONFIRMED: Sie beeinflussen unter anderem die Gegneranzahl (D-021). Die Gesamtzahl der Gegner wird festgelegt und kann je Schwierigkeitsgrad variieren (D-031).
 - CONFIRMED: Die Schwierigkeit soll hauptsächlich durch Anzahl und Masse der Gegner entstehen (D-038).
-- CONFIRMED: Die konkreten Gegnerzahlen und Spawnwerte sind nicht entschieden. Für den ersten Prototyp werden vorläufige Startwerte verwendet, die später anhand von Tests angepasst werden (D-045).
+- CONFIRMED: Die konkreten Gegnerzahlen und Spawnwerte sind nicht endgültig entschieden. Für den ersten Prototyp werden vorläufige Startwerte verwendet, die später anhand von Tests angepasst werden (D-045).
 - CONFIRMED: Die Auswahl erfolgt im Spielablauf nach dem Startbildschirm (D-047).
 
 ## Offen
 
-- OPEN (Tuning): Konkrete Gesamtzahl der Gegner je Grad (Q-001), Spawnwerte (Q-002, Q-003, Q-018).
-- OPEN: Ob weitere Parameter außer der Gegneranzahl beeinflusst werden („unter anderem“ ist bestätigt, die Liste nicht), voreingestellter Grad (Q-019).
-- OPEN: Reihenfolge der Schwierigkeit (z. B. Gemütlich < Normal < Winterhart) ist durch die Namen nahegelegt, aber nicht ausdrücklich bestätigt.
+- TESTWERTE: Gesamtzahl der Gegner je Grad (Q-001), Spawnwerte (Q-002, Q-003, Q-018). Die vorläufigen Testwerte stehen unten.
+- TECH: Der Schwierigkeitsgrad ändert im Prototyp nur die Wellenplan-Daten (Gesamtzahl und davon abhängige Gruppen), keine anderen Spielwerte; kein voreingestellter Grad (TECH-12).
+- Die Reihenfolge Gemütlich < Normal < Winterhart ist durch die Namen nahegelegt und wird in den Testwerten so angenommen.
 
-## Vorläufige Startwerte (PROPOSED, nicht bestätigt)
+## Vorläufige Testwerte (TESTWERT, nicht bestätigt)
 
-Dies ist ein **Vorschlag zur Freigabe** als erster Testsatz im Sinne von D-045. Er ist nicht bindend, keine Designaussage und wird anhand von Tests angepasst.
+Dieser Wellenplan ist ein **vorläufiger Startsatz** im Sinne von D-045. Er folgt der bestätigten Verlaufsform: zuerst einzelne Gegner mit längeren Pausen, dann kleinere Gruppen mit höherer Spawnrate, dann eine größere Welle. Zeiten in Sekunden ab Rundenstart. Er wird anhand von Tests angepasst und gilt als nicht bindend.
 
-| Grad | Gesamtzahl Gegner N (Vorschlag) |
-|---|---|
-| Gemütlich | 25 |
-| Normal | 40 |
-| Winterhart | 60 |
+| Grad | Gesamtzahl N | Phase 1: einzelne Gegner | Phase 2: kleine Gruppen | Phase 3: große Welle |
+|---|---:|---|---|---|
+| Gemütlich | 25 | 3 Einzelne, Abstand 6 s, ab t = 3 | 4 Gruppen à 3 (12), Abstand 8 s, ab t = 30 | 10 Gegner, 1 pro Sekunde, ab t = 75 |
+| Normal | 40 | 5 Einzelne, Abstand 6 s, ab t = 3 | 5 Gruppen à 3 (15), Abstand 8 s, ab t = 40 | 20 Gegner, 2 pro Sekunde, ab t = 95 |
+| Winterhart | 60 | 6 Einzelne, Abstand 5 s, ab t = 3 | 6 Gruppen à 4 (24), Abstand 7 s, ab t = 36 | 30 Gegner, 3 pro Sekunde, ab t = 100 |
 
-Weitere Startwerte (Spawnintervalle, Gruppengrößen, Gegnerwerte) stehen als Parametertabelle im [Balance-Modell](balance-and-statistics.md). Der Wellenplan verteilt die Gegnergesamtzahl entsprechend der Verlaufsform (Anfang einzeln und mit längeren Pausen, Mitte kleinere Gruppen mit höherer Spawnrate, später größere Gruppen, REQ-CORE-002).
+Summen: Gemütlich 3 + 12 + 10 = 25, Normal 5 + 15 + 20 = 40, Winterhart 6 + 24 + 30 = 60. Die Zeitpunkte sind als Daten in der Konfiguration abgelegt. Eine Gruppe spawnt gleichzeitig, jeder Gegner an einer zufälligen horizontalen Position (TECH-10). Die Pause vor der großen Welle ergibt sich aus den Zeitpunkten.
 
 ## Anforderungen
 
@@ -38,17 +38,17 @@ Weitere Startwerte (Spawnintervalle, Gruppengrößen, Gegnerwerte) stehen als Pa
 - **Gewünschtes Verhalten:** Es existieren die Profile „Gemütlich“, „Normal“, „Winterhart“. Ein Profil ist ein Konfigurationsobjekt, das Gameplay-Parameter überschreibt.
 - **Akzeptanzkriterien:** (1) Genau diese drei Profile existieren. (2) Gameplay liest Parameter über das aktive Profil, nicht aus festen Konstanten. (3) Profile sind ohne Codeänderung der Logik austauschbar. (4) Auswahl siehe REQ-FLOW-002.
 - **Testfälle:** auto: Die Profilliste hat drei Einträge mit diesen Namen. auto: Wechsel des Profils ändert den gelesenen Wert.
-- **Abhängigkeiten:** ui-and-flow (REQ-FLOW-002), Q-019.
-- **Entscheidungsstatus:** CONFIRMED (D-021, D-047); OPEN (Standardgrad).
+- **Abhängigkeiten:** ui-and-flow (REQ-FLOW-002).
+- **Entscheidungsstatus:** CONFIRMED (D-021, D-047); TECH (keine Voreinstellung).
 
 ### REQ-DIF-002 – Gegnergesamtzahl hängt vom Grad ab
 - **Problemstellung:** Die Schwierigkeit soll die Gegneranzahl beeinflussen.
 - **Ziel:** Die Gesamtzahl der Gegner ist pro Profil konfigurierbar.
 - **Gewünschtes Verhalten:** Der Wellenplan bezieht die Gegnergesamtzahl aus dem aktiven Profil.
-- **Akzeptanzkriterien:** (1) Wechsel des Profils kann die erzeugte Gegnergesamtzahl ändern. (2) Konkrete Anzahlen stehen ausschließlich in Konfigurationsdaten. (3) Die Zahlen sind als vorläufig markiert, bis sie freigegeben sind (D-045). (4) Der Prototyp läuft mit den vorläufigen Startwerten.
+- **Akzeptanzkriterien:** (1) Wechsel des Profils kann die erzeugte Gegnergesamtzahl ändern. (2) Konkrete Anzahlen stehen ausschließlich in Konfigurationsdaten. (3) Die Zahlen sind als vorläufig markiert, bis sie freigegeben sind (D-045). (4) Der Prototyp läuft mit den vorläufigen Testwerten dieses Dokuments. (5) Die Summe aller Spawns des Plans entspricht der Gesamtzahl des Grades.
 - **Testfälle:** auto: Mit Testprofilen A und B mit unterschiedlicher Anzahl werden entsprechend viele Spawns erzeugt.
-- **Abhängigkeiten:** core-gameplay (REQ-CORE-002), Q-001.
-- **Entscheidungsstatus:** CONFIRMED (Prinzip, D-031, D-045); OPEN/PROPOSED (Werte).
+- **Abhängigkeiten:** core-gameplay (REQ-CORE-002).
+- **Entscheidungsstatus:** CONFIRMED (Prinzip, D-031, D-045); TESTWERT (Werte).
 
 ## Menschliche Bewertung
 

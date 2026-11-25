@@ -1,57 +1,67 @@
 # Spieler
 
-**Zweck:** Beschreibt Bewegung, freie Bewegung durch Gegner, Unsterblichkeit und die Rolle des Spielers bei der Reparatur.
+**Zweck:** Beschreibt Bewegung, Spielfeldgrenzen, freie Bewegung durch Gegner, Unsterblichkeit und die Rolle des Spielers bei der Reparatur.
 **Zielgruppe:** Gameplay-Agent Spieler.
 **Abhängigkeiten:** [core-gameplay.md](core-gameplay.md); Angriff: [combat.md](combat.md); Reparatur: [repair-system.md](repair-system.md).
 
-## Bestätigte Regeln
+## Bestätigte Regeln (D-007, D-011, D-035, D-057)
 
-- CONFIRMED: Bewegung über WASD und Pfeiltasten (D-007).
-- CONFIRMED: Der Spieler kann sich frei durch Gegner bewegen. Gegner blockieren oder beeinflussen ihn nicht (D-035).
-- CONFIRMED: Der Spieler greift automatisch an, es gibt keine manuelle Angriffstaste (D-008, D-036). Details: combat.md.
-- CONFIRMED: Der Spieler kann nicht sterben (D-011).
-- CONFIRMED: Reparatur durch Anwesenheit im Reparaturbereich, ohne zusätzliche Taste (D-020, D-043). Details: repair-system.md.
+- CONFIRMED: Der Spieler kann im Prototyp nicht sterben. Keine Spieler-Lebenspunkte, keine Todes- oder Respawn-Mechanik.
+- CONFIRMED: Gegnerkontakt verursacht keine negativen Effekte. Der Spieler läuft frei durch Gegner. Gegner blockieren oder beeinflussen ihn nicht.
+- CONFIRMED: Feste Bewegungsgeschwindigkeit. Keine Upgrades im Prototyp.
+- CONFIRMED: Steuerung mit WASD und Pfeiltasten.
+- CONFIRMED: Diagonale Bewegung ist genauso schnell wie horizontale und vertikale.
+- CONFIRMED: Der Spieler kann sich nicht außerhalb des sichtbaren Spielfeldes bewegen und nicht auf den Zug gelangen. In der übrigen Spielfläche kann er sich frei bewegen, sofern keine Hindernisse vorhanden sind.
+- CONFIRMED: Der Spieler greift automatisch an, ohne Angriffstaste (D-008, D-036). Details: combat.md.
+- CONFIRMED: Reparatur durch Anwesenheit in der Reparaturzone, ohne zusätzliche Taste (D-056). Details: repair-system.md.
 
 ## Offen
 
-- OPEN (Tuning): Bewegungsgeschwindigkeit und Spielerwerte. Startposition des Spielers (Q-011).
-- OPEN: Verhalten bei gleichzeitigen oder gegenläufigen Tasten und Diagonalgeschwindigkeit (Detail der Spielerwerte, wird nicht eigenmächtig entschieden).
-- OPEN: Bauen: was gebaut werden kann (Q-010).
+Keine Gameplay-Fragen. Hindernisse sind nicht vorgesehen (TECH-01). Gleichzeitige gegenläufige Tasten: TECH-04. Zahlenwerte (Geschwindigkeit): Testwerte in [../technical/architecture.md](../technical/architecture.md).
 
 ## Anforderungen
 
-### REQ-PLR-001 – Bewegung per Tastatur
-- **Problemstellung:** Der Spieler muss sich über das Spielfeld bewegen können.
-- **Ziel:** Steuerung mit WASD und Pfeiltasten.
-- **Gewünschtes Verhalten:** W/↑ nach oben, A/← links, S/↓ unten, D/→ rechts im Top-Down-Raum. Gleichzeitige und gegenläufige Tasten sowie Diagonalgeschwindigkeit sind nicht festgelegt.
-- **Akzeptanzkriterien:** (1) Jede der 8 Tasten bewegt den Spieler in die genannte Richtung. (2) Ohne Eingabe bleibt der Spieler stehen. (3) Die Geschwindigkeit ist ein konfigurierbarer Wert. (4) Die Bewegung ist im Gameplay-Modul ohne Phaser-Szene testbar. (5) Der Spieler kann das Spielfeld nicht verlassen.
-- **Testfälle:** auto: Eingabe-Abstraktion liefert pro Taste den erwarteten Richtungsvektor. Positionsupdate über Δt = v·Δt. Spieler an der Spielfeldgrenze wird nicht hinausbewegt. manuell: alle 8 Tasten im Browser.
-- **Abhängigkeiten:** architecture, Q-011 (Spielfeldgrenzen).
-- **Entscheidungsstatus:** CONFIRMED (Tasten, D-007); OPEN (Geschwindigkeit, Kombinationen).
+### REQ-PLR-001 – Bewegung per Tastatur mit gleichmäßiger Geschwindigkeit
+- **Problemstellung:** Der Spieler muss sich über das Spielfeld bewegen können, Diagonalen dürfen nicht schneller sein.
+- **Ziel:** Steuerung mit WASD und Pfeiltasten, gleiche Geschwindigkeit in allen Richtungen.
+- **Gewünschtes Verhalten:** W/↑ nach oben, A/← links, S/↓ unten, D/→ rechts im Top-Down-Raum. Mit zwei Richtungstasten bewegt sich der Spieler diagonal mit derselben Geschwindigkeit wie in eine Achsenrichtung.
+- **Akzeptanzkriterien:** (1) Jede der 8 Tasten bewegt in die genannte Richtung. (2) Ohne Eingabe bleibt der Spieler stehen. (3) Die Geschwindigkeit ist ein fester konfigurierbarer Wert. (4) Die Länge des Bewegungsvektors pro Zeiteinheit ist bei Diagonalen gleich der bei Achsenbewegung. (5) Die Bewegung ist im Gameplay-Modul ohne Phaser testbar.
+- **Testfälle:** auto: Eingabe rechts, Δt → Weg = v·Δt. Eingabe rechts+oben, Δt → Weg = v·Δt (Betrag). Keine Eingabe → keine Bewegung. manuell: alle 8 Tasten im Browser.
+- **Abhängigkeiten:** architecture.
+- **Entscheidungsstatus:** CONFIRMED (D-007, D-057); TESTWERT (Geschwindigkeit).
 
 ### REQ-PLR-002 – Unsterblichkeit
 - **Problemstellung:** Der Prototyp hat keine Spielertod-Mechanik.
 - **Ziel:** Der Spieler kann nicht sterben.
-- **Gewünschtes Verhalten:** Es gibt keine Spieler-Lebenspunkte und keine Niederlage durch Spielertod.
-- **Akzeptanzkriterien:** Kein Ereignis verändert einen Spielerzustand zu „tot“. Keine Spielende-Bedingung hängt vom Spielerzustand ab.
-- **Testfälle:** auto: Simulation mit vielen Gegnern über lange Zeit, Spielerzustand bleibt „lebendig“.
+- **Gewünschtes Verhalten:** Es gibt keine Spieler-Lebenspunkte, keinen Tod, kein Respawn und keine Niederlage durch Spielertod.
+- **Akzeptanzkriterien:** (1) Der Spielerzustand enthält keine Lebenspunkte. (2) Kein Ereignis, auch kein Gegnerkontakt, verändert den Spielerzustand negativ. (3) Keine Spielende-Bedingung hängt vom Spielerzustand ab.
+- **Testfälle:** auto: Simulation mit vielen Gegnern auf der Spielerposition, Zustand unverändert. Code-Review.
 - **Abhängigkeiten:** win-lose.
-- **Entscheidungsstatus:** CONFIRMED (D-011).
+- **Entscheidungsstatus:** CONFIRMED (D-011, D-057).
 
 ### REQ-PLR-003 – Anwesenheit zur Reparatur
-- **Problemstellung:** Die Reparatur setzt die Anwesenheit des Spielers voraus.
-- **Ziel:** Der Spielerzustand „befindet sich im Reparaturbereich X“ ist eindeutig bestimmbar und ausreichend.
-- **Gewünschtes Verhalten:** Steht der Spieler im Reparaturbereich eines Objekts, wird dieser Zustand für das Reparatursystem bereitgestellt. Der Spieler benötigt keine Taste.
-- **Akzeptanzkriterien:** (1) Es existiert keine Taste und kein Befehl für Reparatur. (2) Die Aufenthaltsbestimmung ist eindeutig, auch am Rand eines Bereichs (konsistente Regel für „innerhalb“). (3) Die Reparaturlogik selbst liegt im Reparatursystem (REQ-REP-003, REQ-REP-004).
-- **Testfälle:** auto: Spielerposition innerhalb/außerhalb → richtiger Zustand, inkl. Grenzfall.
-- **Abhängigkeiten:** repair-system, Q-026.
-- **Entscheidungsstatus:** CONFIRMED (D-020, D-043).
+- **Problemstellung:** Die Reparatur setzt die Anwesenheit des Spielers in der Zone voraus.
+- **Ziel:** Die Aufenthaltsbestimmung „Spieler in Zone X“ ist eindeutig.
+- **Gewünschtes Verhalten:** Der Spielerzustand „befindet sich in Zone X“ wird für das Reparatursystem bereitgestellt. Es gibt keine Reparaturtaste.
+- **Akzeptanzkriterien:** (1) Keine Taste und kein Befehl für Reparatur. (2) Konsistente Regel für „innerhalb“, auch am Rand (Position im Rechteck inklusive Rand, TECH).
+- **Testfälle:** auto: Position innerhalb, außerhalb und auf dem Rand.
+- **Abhängigkeiten:** repair-system.
+- **Entscheidungsstatus:** CONFIRMED (D-056).
 
 ### REQ-PLR-004 – Freie Bewegung durch Gegner
 - **Problemstellung:** Gegner sollen den Spieler nie behindern.
 - **Ziel:** Keine Kollisionswirkung zwischen Spieler und Gegnern.
-- **Gewünschtes Verhalten:** Der Spieler bewegt sich ungehindert durch Gegner. Gegner schieben, bremsen, blockieren oder schädigen ihn nicht und beeinflussen sein Verhalten nicht.
-- **Akzeptanzkriterien:** (1) Die Spielerposition nach einem Bewegungsschritt ist unabhängig von Anzahl und Lage der Gegner. (2) Keine Gegnerlogik liest oder verändert Spielerzustand. (3) Der Spieler kann sich an derselben Position wie ein Gegner befinden.
-- **Testfälle:** auto: Spieler läuft durch eine Gegnermenge, Position = erwartete Position ohne Gegner. auto: Gegner auf Spielerposition → Spielerzustand unverändert.
+- **Gewünschtes Verhalten:** Der Spieler bewegt sich ungehindert durch Gegner. Gegner schieben, bremsen, blockieren oder schädigen ihn nicht.
+- **Akzeptanzkriterien:** (1) Die Spielerposition nach einem Schritt ist unabhängig von Gegnern. (2) Keine Gegnerlogik liest oder verändert den Spielerzustand. (3) Spieler und Gegner können dieselbe Position einnehmen.
+- **Testfälle:** auto: Spieler läuft durch eine Gegnermenge, Position = Position ohne Gegner.
 - **Abhängigkeiten:** enemies.
-- **Entscheidungsstatus:** CONFIRMED (D-035).
+- **Entscheidungsstatus:** CONFIRMED (D-035, D-057).
+
+### REQ-PLR-005 – Spielfeldgrenzen und Zug als Sperrzone
+- **Problemstellung:** Der Spieler darf das Spielfeld nicht verlassen und nicht auf den Zug gelangen.
+- **Ziel:** Begrenzte Bewegungsfläche.
+- **Gewünschtes Verhalten:** Die Spielerposition wird auf die begehbare Fläche beschränkt: das sichtbare Spielfeld ohne den Zugbereich. Es gibt keine weiteren Hindernisse.
+- **Akzeptanzkriterien:** (1) Die Spielerposition liegt nach jedem Schritt innerhalb des Spielfeldes. (2) Sie liegt nie im Zugbereich. (3) An der Grenze wird die Bewegung begrenzt, ohne dass die Geschwindigkeitsregeln anderer Richtungen verletzt werden (Gleiten entlang der Grenze ist zulässig).
+- **Testfälle:** auto: Dauerhafte Eingabe in jede Richtung → Position bleibt in der begehbaren Fläche. Position an jeder Grenze geprüft.
+- **Abhängigkeiten:** core-gameplay (REQ-CORE-001, REQ-CORE-004), train-and-defense (REQ-TRN-002).
+- **Entscheidungsstatus:** CONFIRMED (D-057).

@@ -3,7 +3,7 @@
 **Zweck:** Einstiegspunkt und Index aller Projektdokumente.
 **Zielgruppe:** Alle Agenten und Menschen. Für die Auswahl der Dokumente je Aufgabe siehe [agent-guide.md](agent-guide.md).
 **Abhängigkeiten:** keine.
-**Stand des Projekts:** Planungsphase für einen ersten Gameplay-Prototyp. Es existiert noch kein Spielcode.
+**Stand des Projekts:** Dokumentation und Architektur des ersten Gameplay-Prototyps sind vorbereitet. Es existiert noch kein Spielcode. Nächster Schritt: Implementierung nach [technical/implementation-plan.md](technical/implementation-plan.md).
 
 ## Statuslegende (gilt in allen Dokumenten)
 
@@ -12,6 +12,8 @@
 | **CONFIRMED** | Vom Projektverantwortlichen ausdrücklich bestätigt. Verbindlich. |
 | **PROPOSED** | Vorschlag, nicht bestätigt. Darf nicht als Anforderung umgesetzt werden. |
 | **OPEN** | Nicht entschieden. Nicht eigenmächtig entscheiden, nicht raten. |
+| **TESTWERT** | Vorläufiger Zahlenwert zum Testen (D-045). Wird anhand von Spieltests angepasst, nicht bestätigt. |
+| **TECH** | Technische Entscheidung des ausführenden Agenten (D-060). Revidierbar, ändert keine bestätigte Gameplay-Regel. |
 
 Jede Aussage mit Spielbezug trägt einen dieser Status. Aussagen ohne Status sind reine Erläuterungen ohne Anforderungscharakter.
 
@@ -35,12 +37,13 @@ Spalte „Zusätzlich lesen“: Dokumente, die man für ein vollständiges Verst
 | [prototype/train-and-defense.md](prototype/train-and-defense.md) | Zugteile, Lebenspunkte, Schaden, Funktionsverlust | aktiv | Agent Zug | enemies, repair-system |
 | [prototype/repair-system.md](prototype/repair-system.md) | Reparaturbereiche, automatische Reparatur, Prioritäten | aktiv | Agent Reparatur | train-and-defense, player |
 | [prototype/resources.md](prototype/resources.md) | Ressourcen: Prototyp (keine Progression) und Vollspiel-Vision | aktiv | Agent Ressourcen | repair-system |
-| [prototype/difficulty.md](prototype/difficulty.md) | Schwierigkeitsgrade, vorläufige Startwerte (PROPOSED) | aktiv | Balancing-Agent | enemies, balance-and-statistics |
+| [prototype/difficulty.md](prototype/difficulty.md) | Schwierigkeitsgrade, vorläufige Testwerte (TESTWERT) | aktiv | Balancing-Agent | enemies, balance-and-statistics |
 | [prototype/win-lose.md](prototype/win-lose.md) | Sieg- und Niederlagebedingungen | aktiv | Agent Spielablauf | train-and-defense |
 | [prototype/ui-and-flow.md](prototype/ui-and-flow.md) | Spielablauf, Startbildschirm, Schwierigkeitswahl, HUD, Ergebnisbildschirm | aktiv | Agent Spielablauf/UI | win-lose, difficulty |
 | [prototype/balance-and-statistics.md](prototype/balance-and-statistics.md) | Einfaches Balance-Modell, Rundenstatistik | aktiv | Balancing-Agent, Agent Statistik | combat, enemies, repair-system |
-| [technical/architecture.md](technical/architecture.md) | Architekturanforderungen, Trennung Gameplay/Darstellung/Szenen | aktiv | alle Code-Agenten | – |
-| [technical/testing-and-greybox.md](technical/testing-and-greybox.md) | Testbarkeit und Greyboxing | aktiv | Code- und Test-Agenten | architecture |
+| [technical/architecture.md](technical/architecture.md) | Technische Architektur des Prototyps: Schichten, Datenmodell, Spielschritt, Ordnerstruktur, Testwerte, TECH-Entscheidungen | aktiv | alle Code-Agenten | testing-and-greybox |
+| [technical/testing-and-greybox.md](technical/testing-and-greybox.md) | Selbsttest ohne Framework, drei Testmodi, Greybox | aktiv | Code- und Test-Agenten | architecture |
+| [technical/implementation-plan.md](technical/implementation-plan.md) | Zehn Umsetzungsschritte des Prototyps mit Akzeptanzkriterien | aktiv | Implementierungs-Agenten | architecture, testing-and-greybox |
 
 ## Konventionen
 

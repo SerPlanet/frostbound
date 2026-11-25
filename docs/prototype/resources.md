@@ -10,7 +10,7 @@
 - CONFIRMED: Progressionsmechaniken (Belohnungen, Freischaltungen, Upgrades, Ressourcen als Spielsystem) gehören nicht zum ersten Prototyp (D-046).
 - CONFIRMED (optional): Gegnerdrops und Einsammeln können optional umgesetzt werden, haben niedrige Priorität und dürfen den Kernprototyp nicht verzögern (D-046).
 - OPEN: Ob Drops und Einsammeln im Prototyp tatsächlich umgesetzt werden und wie sie funktionieren (Q-006).
-- OPEN: Baukosten (Q-010).
+- OPEN: Baukosten. Im Prototyp gibt es nichts zu bauen (Q-010, zur Bestätigung).
 
 ## Vollspiel (nicht Teil des Prototyps)
 

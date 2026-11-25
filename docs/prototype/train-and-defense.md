@@ -1,74 +1,68 @@
 # Zug und Verteidigung
 
-**Zweck:** Beschreibt den Zug (Lokomotive, Wagon), Lebenspunkte je Zugteil, Schadensannahme, Zerstörung und Funktionsverlust.
+**Zweck:** Beschreibt den Zug (Lokomotive, Wagon, Geschütz), Lebenspunkte, Schadensannahme, Zerstörung und die Abhängigkeit zwischen Wagon und Geschütz.
 **Zielgruppe:** Gameplay-Agent Zug.
 **Abhängigkeiten:** [enemies.md](enemies.md), [repair-system.md](repair-system.md), [win-lose.md](win-lose.md). Begriffe: [../project/glossary.md](../project/glossary.md).
 
 ## Bestätigte Regeln
 
-- CONFIRMED: Der Zug steht im Mittelpunkt (D-004). Er steht während eines Spieltages still, am unteren Rand, der Spielbereich liegt darüber (D-034).
-- CONFIRMED: Im Prototyp gibt es eine Lokomotive und einen Wagon (D-005).
-- CONFIRMED: Jedes Zugteil besitzt eigene Lebenspunkte. Lokomotive und Wagon werden separat beschädigt (D-041).
-- CONFIRMED: Beschädigte Wagons behalten ihre Funktion. Vollständig zerstörte Wagons verlieren ihre Funktion (D-041).
-- CONFIRMED: Ein zerstörter Wagon kann repariert werden. Seine Funktion wird erst nach vollständigem Abschluss der Reparatur wiederhergestellt (D-041, D-043).
-- CONFIRMED: Die Lokomotive hat eigene Lebenspunkte und im ersten Prototyp keine besondere Zusatzfunktion. Spätere Spezialfähigkeiten oder Waffen auf der Lokomotive sind denkbar (D-041).
-- CONFIRMED: Gegner verursachen am Zugziel Schaden (D-015). Zerstörte Zugteile sind keine gültigen Ziele (D-039).
-- CONFIRMED: Das Zuggeschütz ist Teil der Verteidigung (D-009, D-037).
-- CONFIRMED: Game Over, wenn alle Zugteile zerstört sind (D-042), siehe win-lose.md.
+- CONFIRMED: Der Zug steht im Mittelpunkt (D-004). Er steht still am unteren Rand, der Spielbereich liegt darüber (D-034).
+- CONFIRMED: Der Prototyp besteht aus genau einer Lokomotive, einem Wagon und einem Geschütz. Das Geschütz befindet sich auf dem Wagon. Die Lokomotive hat kein eigenes Geschütz (D-054).
+- CONFIRMED: Startwerte: Lokomotive 100 HP, Wagon 100 HP, Geschütz 20 HP, Standardschaden eines Gegners 10 (D-053). Keine unveränderlichen Balancewerte für die Vollversion. Die 20 HP des Geschützes sind im Prototyp nicht durch Gegnerangriffe gefährdet.
+- CONFIRMED: Jedes Zugteil hat eigene Lebenspunkte, Lokomotive und Wagon werden separat beschädigt (D-041).
+- CONFIRMED: Beschädigte Wagons behalten ihre Funktion, vollständig zerstörte verlieren sie. Die Funktion kehrt erst nach vollständigem Abschluss der Reparatur zurück (D-041).
+- CONFIRMED: Wird der Wagon zerstört, ist auch das darauf montierte Geschütz zerstört und nicht funktionsfähig. Die Reparatur des zerstörten Wagons stellt Wagon und Geschütz gemeinsam vollständig wieder her (Geschütz 20/20, vorheriger Zustand irrelevant). Ist der Wagon nur beschädigt, bleiben Wagon und Geschütz unabhängig voneinander funktionsfähig (D-055).
+- CONFIRMED: Die Lokomotive hat im Prototyp keine Zusatzfunktion (D-041).
+- CONFIRMED: Gegner verursachen am Zugziel 10 Schaden (D-052). Zerstörte Zugteile sind keine gültigen Ziele (D-039).
+- CONFIRMED: Spätere Geschütze auf der Lokomotive, weitere Waggons und Upgrades sind nicht Teil des Prototyps (D-054, D-059).
 
 ## Offen
 
-- OPEN (Tuning): Lebenspunkte je Zugteil (Q-007).
-- OPEN: Anzahl, Montageort und Zerstörungsmechanik der Geschütze, Bedeutung der „Funktion“ eines Wagons im Prototyp (Q-025). Hinweis: Die Bestätigung nennt „montierte Geschütze“ auf Wagons. Ob und welches Geschütz auf welchem Zugteil steht, ist nicht festgelegt.
-- OPEN: Bauen: was gebaut werden kann (Q-010).
+Keine Gameplay-Fragen. Eine separate Geschützreparatur ist für den Prototyp nicht erforderlich (D-055).
 
 ## Anforderungen
 
 ### REQ-TRN-001 – Zugaufbau
 - **Problemstellung:** Der Prototyp braucht einen definierten Zug.
-- **Ziel:** Lokomotive und genau ein Wagon.
-- **Gewünschtes Verhalten:** Der Zug besteht aus genau einer Lokomotive und einem Wagon, dargestellt als Greybox-Formen.
-- **Akzeptanzkriterien:** (1) Das Zugmodell enthält genau 1 Lokomotive und genau 1 Wagon. (2) Beide existieren in der Gameplay-Logik unabhängig von der Darstellung. (3) Die Darstellung nutzt einfache geometrische Formen.
-- **Testfälle:** auto: Zug-Initialisierung → 2 Zugteile (Lokomotive, Wagon). manuell: Greybox zeigt zwei Formen.
+- **Ziel:** Lokomotive, Wagon und ein Geschütz auf dem Wagon.
+- **Gewünschtes Verhalten:** Der Zug besteht aus genau einer Lokomotive und einem Wagon. Auf dem Wagon ist genau ein Geschütz montiert. Die Lokomotive trägt kein Geschütz. Darstellung als Greybox-Formen.
+- **Akzeptanzkriterien:** (1) Das Zugmodell enthält genau 1 Lokomotive, 1 Wagon und 1 Geschütz. (2) Das Geschütz gehört zum Wagon. (3) Es existiert kein Geschütz an der Lokomotive. (4) Das Modell existiert in der Gameplay-Logik unabhängig von der Darstellung.
+- **Testfälle:** auto: Zug-Initialisierung → Teile: Lokomotive, Wagon, Geschütz (am Wagon). manuell: Greybox zeigt Lokomotive, Wagon und Geschütz auf dem Wagon.
 - **Abhängigkeiten:** architecture, testing-and-greybox.
-- **Entscheidungsstatus:** CONFIRMED (D-005, D-006).
+- **Entscheidungsstatus:** CONFIRMED (D-005, D-054).
 
 ### REQ-TRN-002 – Zug steht still am unteren Rand
 - **Problemstellung:** Die Lage des Zuges muss feststehen.
 - **Ziel:** Stillstehender Zug am unteren Spielfeldrand.
-- **Gewünschtes Verhalten:** Position und Ausrichtung des Zuges ändern sich während einer Runde nicht.
-- **Akzeptanzkriterien:** (1) Die Position der Zugteile ist über die gesamte Runde konstant. (2) Der Zug liegt am unteren Spielfeldrand. (3) Es gibt keine Bewegungslogik für den Zug.
+- **Gewünschtes Verhalten:** Position des Zuges ändert sich während einer Runde nicht. Der Spieler kann ihn nicht betreten.
+- **Akzeptanzkriterien:** (1) Positionen konstant über die Runde. (2) Zug am unteren Rand. (3) Keine Bewegungslogik für den Zug.
 - **Testfälle:** auto: Positionsvergleich Rundenstart/Rundenende.
-- **Abhängigkeiten:** core-gameplay (REQ-CORE-001).
-- **Entscheidungsstatus:** CONFIRMED (D-034).
+- **Abhängigkeiten:** core-gameplay (REQ-CORE-001), player (REQ-PLR-001).
+- **Entscheidungsstatus:** CONFIRMED (D-034, D-057).
 
-### REQ-TRN-003 – Lebenspunkte je Zugteil und Zerstörung
-- **Problemstellung:** Zugteile müssen getrennt Schaden nehmen und zerstört werden können.
-- **Ziel:** Eigene Lebenspunkte je Zugteil mit definiertem Zerstörungszustand.
-- **Gewünschtes Verhalten:** Jedes Zugteil hat aktuelle und maximale Lebenspunkte. Schaden wirkt nur auf das getroffene Teil. Bei 0 Lebenspunkten ist das Teil vollständig zerstört.
-- **Akzeptanzkriterien:** (1) Schaden auf ein Teil verändert die Lebenspunkte der anderen Teile nicht. (2) Lebenspunkte sinken nie unter 0. (3) Bei 0 gilt das Teil als zerstört. (4) Maximalwerte sind Konfiguration je Teil. (5) Beschädigt, nicht zerstört = Lebenspunkte > 0 und < Maximum.
-- **Testfälle:** auto: Schaden S auf Lokomotive → nur Lokomotive verliert. Schaden ≥ aktuelle Lebenspunkte → zerstört, Wert 0, nicht negativ.
-- **Abhängigkeiten:** Q-007.
-- **Entscheidungsstatus:** CONFIRMED (D-041); OPEN (Werte).
+### REQ-TRN-003 – Lebenspunkte und Zerstörungszustand
+- **Problemstellung:** Zugteile müssen getrennt Schaden nehmen und zerstört werden können. Ein Teil bleibt auch während seiner Reparatur zerstört.
+- **Ziel:** Lebenspunkte und ein eigener Zerstörungsstatus je Zugteil.
+- **Gewünschtes Verhalten:** Jedes Zugteil (Lokomotive, Wagon) hat aktuelle und maximale Lebenspunkte (Start: je 100) und einen Zerstörungsstatus. Erreichen die Lebenspunkte 0, wird das Teil zerstört. Es bleibt zerstört, auch während die Lebenspunkte durch Reparatur wieder steigen, bis die Reparatur vollständig abgeschlossen ist (volle Lebenspunkte). Ein Teil ist **intakt**, wenn es nicht zerstört ist (auch wenn es beschädigt ist).
+- **Akzeptanzkriterien:** (1) Schaden auf ein Teil verändert die Lebenspunkte der anderen nicht. (2) Lebenspunkte sinken nie unter 0 und steigen nie über das Maximum. (3) Bei 0 Lebenspunkten wird der Status „zerstört“ gesetzt. (4) Während der Reparatur eines zerstörten Teils bleibt der Status „zerstört“, bis die Lebenspunkte das Maximum erreichen. (5) Beschädigt und intakt = Lebenspunkte unter dem Maximum, nicht zerstört.
+- **Testfälle:** auto: Schaden auf die Lokomotive → nur sie verliert. Schaden über den Restwert → 0 und zerstört. Repariert auf 50 → noch zerstört. Repariert auf 100 → nicht mehr zerstört.
+- **Abhängigkeiten:** repair-system.
+- **Entscheidungsstatus:** CONFIRMED (D-041, D-053, D-039); der Status während der Reparatur folgt aus D-039/D-041.
 
 ### REQ-TRN-004 – Schadensannahme am Zug
-- **Problemstellung:** Gegnerschaden muss sich auf das gewählte Zugteil auswirken.
-- **Ziel:** Das erreichte Zugziel nimmt Schaden.
-- **Gewünschtes Verhalten:** Wird Gegnerschaden angewendet, sinken die Lebenspunkte genau des betroffenen Zugteils.
-- **Akzeptanzkriterien:** (1) Schaden verringert die Lebenspunkte des betroffenen Teils um den Schadenswert (gedeckelt bei 0). (2) Schaden auf ein bereits zerstörtes Teil kann nicht entstehen, da es kein gültiges Ziel ist (Neuwahl bei Zerstörung unterwegs: Q-023). (3) Der angerichtete Schaden wird je Zugteil für die Rundenstatistik erfasst.
-- **Testfälle:** auto: Zugteil mit Testlebenspunkten H, Schaden S → max(H−S, 0). Statistik-Zähler Schaden je Teil + S.
-- **Abhängigkeiten:** enemies (REQ-ENM-003), balance-and-statistics (REQ-STA-001), Q-023.
-- **Entscheidungsstatus:** CONFIRMED (D-015, D-041); OPEN (Werte, Verhalten bei Zerstörung unterwegs).
+- **Problemstellung:** Gegnerschaden muss sich auf das erreichte Zugteil auswirken.
+- **Ziel:** Das erreichte Zugteil nimmt 10 Schaden.
+- **Gewünschtes Verhalten:** Erreicht ein Gegner sein Zugteil, werden einmalig 10 Schadenspunkte angewendet, unabhängig davon, ob Lokomotive oder Wagon getroffen wird.
+- **Akzeptanzkriterien:** (1) Die Lebenspunkte des getroffenen Teils sinken um 10 (nicht unter 0). (2) Der Schaden ist für Lokomotive und Wagon identisch. (3) Der angerichtete Schaden wird je Zugteil für die Statistik erfasst. (4) Ein Teil, das auf 0 sinkt, wird sofort zerstört (REQ-TRN-003) und das Geschütz mit dem Wagon (REQ-TRN-005).
+- **Testfälle:** auto: Teil mit 100 → 90. Teil mit 5 → 0 und zerstört. Gleicher Schaden an Lokomotive und Wagon.
+- **Abhängigkeiten:** enemies (REQ-ENM-003), balance-and-statistics (REQ-STA-001).
+- **Entscheidungsstatus:** CONFIRMED (D-052).
 
-### REQ-TRN-005 – Funktionszustand von Lokomotive und Wagon
-- **Problemstellung:** Zerstörte Wagons verlieren ihre Funktion, beschädigte nicht.
-- **Ziel:** Ein eindeutiger Funktionszustand je Zugteil.
-- **Gewünschtes Verhalten:** Ein beschädigter, nicht zerstörter Wagon ist voll funktionsfähig. Ein vollständig zerstörter Wagon hat keine Funktion, bis seine Reparatur vollständig abgeschlossen ist. Die Lokomotive hat im Prototyp keine Zusatzfunktion.
-- **Akzeptanzkriterien:** (1) Funktion aktiv ⇔ Lebenspunkte > 0 (für Wagons), mit der Ausnahme, dass nach Zerstörung die Funktion erst bei vollständigem Reparaturabschluss wieder aktiv wird (siehe REQ-REP-005). (2) Beschädigung allein verändert die Funktion nie. (3) Für die Lokomotive ist keine Zusatzfunktion implementiert.
-- **Testfälle:** auto: Wagon bei 1 Lebenspunkt → Funktion aktiv. Wagon bei 0 → inaktiv. Reparatur bei 99 % → inaktiv, bei Abschluss → aktiv.
-- **Abhängigkeiten:** repair-system, Q-025 (was die Funktion eines Wagons im Prototyp umfasst).
-- **Entscheidungsstatus:** CONFIRMED (D-041); OPEN (Inhalt der Funktion, Q-025).
-
-## Anmerkung
-
-Reparatur und Bauen sind in [repair-system.md](repair-system.md) bzw. [player.md](player.md) beschrieben.
+### REQ-TRN-005 – Funktionszustand und Wagon-Geschütz-Abhängigkeit
+- **Problemstellung:** Wagon und Geschütz sind gekoppelt, aber nur in bestimmten Fällen.
+- **Ziel:** Eindeutiger Funktionszustand für Wagon und Geschütz.
+- **Gewünschtes Verhalten:** (a) Ein beschädigter, nicht zerstörter Wagon ist voll funktionsfähig, sein Geschütz ebenfalls. (b) Wird der Wagon zerstört, ist sein Geschütz zerstört und funktionslos. (c) Mit dem vollständigen Abschluss der Wagon-Reparatur sind Wagon und Geschütz wieder funktionsfähig, das Geschütz hat 20/20 HP, unabhängig von seinem vorherigen Zustand. (d) Die Lokomotive hat keine Zusatzfunktion. (e) Das Geschütz wird im Prototyp nicht von Gegnern angegriffen und verliert Lebenspunkte nur über die Zerstörung des Wagons.
+- **Akzeptanzkriterien:** (1) Wagon beschädigt, nicht zerstört → Geschütz funktionsfähig. (2) Wagon zerstört → Geschütz im selben Schritt zerstört und funktionslos. (3) Während der Wagon-Reparatur ist das Geschütz weiter funktionslos. (4) Bei Abschluss: Wagon intakt, Geschütz funktionsfähig mit 20/20. (5) Gegnerangriffe können das Geschütz nicht als Ziel wählen. (6) Es gibt keine separate Geschützreparatur.
+- **Testfälle:** auto: Wagon auf 10 HP → Geschütz feuert. Wagon 0 → Geschütz feuert nicht. Reparatur bei 95 → Geschütz funktionslos. Reparatur bei 100 → Geschütz funktionsfähig, 20/20.
+- **Abhängigkeiten:** repair-system (REQ-REP-005), combat (REQ-CMB-002).
+- **Entscheidungsstatus:** CONFIRMED (D-054, D-055, D-041).
