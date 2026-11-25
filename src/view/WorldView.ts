@@ -3,7 +3,7 @@
 // Ausschließlich Phaser Graphics und Text, keine Bilddateien (REQ-ARC-003, REQ-TST-002).
 
 import Phaser from "phaser";
-import { CONFIRMED, LAYOUT } from "../config.ts";
+import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
 import { getPartCondition } from "../game/train.ts";
 import type { GameEvent, TrainPart, World } from "../game/types.ts";
 
@@ -135,7 +135,7 @@ export class WorldView {
     g.lineStyle(active ? 5 : 3, active ? COLOR.shotPlayer : COLOR.zone, 0.95);
     g.strokeRect(zone.x, zone.y, zone.w, zone.h);
 
-    const progress = Math.min(1, part.repairProgressMs / CONFIRMED.repairStepMs);
+    const progress = Math.min(1, part.repairProgressMs / TESTWERTE.repairStepMs);
     g.fillStyle(COLOR.barBack, 1);
     g.fillRect(zone.x + 12, zone.y + zone.h - 18, zone.w - 24, 8);
     g.fillStyle(COLOR.zone, 1);

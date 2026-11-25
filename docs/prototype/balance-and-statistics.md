@@ -22,11 +22,11 @@ Spalte „Status“: **CONFIRMED** = bestätigter Startwert für den Prototyp (D
 | v | Gegnertempo in LE/s | 40 | TESTWERT |
 | s | Schaden eines Gegners am Zugteil | 10 | CONFIRMED |
 | L | Weg eines Gegners im sichtbaren Spielfeld bis zum Zug in LE | ca. 600 | TECH (aus dem Layout) |
-| d_p, f_p | Spielerschaden, Spielerfeuerrate (1/s) | 1 und 1 | TESTWERT |
+| d_p, f_p | Spielerschaden, Spielerfeuerrate (1/s) | 1 und 1,43 (Teststand 1, vorher 1) | TESTWERT |
 | R_p | Reichweite des Spielerangriffs in LE | 90 | TESTWERT |
-| d_t, f_t | Geschützschaden, Geschützfeuerrate (1/s) | 1 und 1 | TESTWERT |
+| d_t, f_t | Geschützschaden, Geschützfeuerrate (1/s) | 1 und 0,4 (Teststand 1, vorher 1) | TESTWERT |
 | HP_L, HP_W, HP_G | Lebenspunkte Lokomotive, Wagon, Geschütz | 100, 100, 20 | CONFIRMED |
-| r | Reparaturleistung, Mittel: 5 HP je 5 s | 1 HP/s | CONFIRMED |
+| r | Reparaturleistung, Mittel: 5 HP je 5 s | 1 HP/s (bestätigt, D-056). Im Teststand 1 vorläufig 2 HP/s (5 HP je 2,5 s, TESTWERT) | CONFIRMED / TESTWERT |
 | N | Gesamtzahl der Gegner | siehe [difficulty.md](difficulty.md) | TESTWERT |
 
 Das Geschütz hat das gesamte Spielfeld als Reichweite (D-037). Seine Reichweite ist kein Parameter. Das Geschütz wird im Prototyp nicht angegriffen, HP_G geht nicht in die Schadensrechnung ein.
@@ -52,6 +52,8 @@ Alle Formeln bilden eine **obere Schranke bzw. Mittelwerte**. Sie ignorieren Üb
 13. **Theoretische Verteidigungsleistung:** Q_def = min(1, K · (T_s + τ) / N). Anteil der Gegner, die rechnerisch abgewehrt werden könnten. 1 − Q_def ist die theoretische Mindestdurchbruchquote.
 
 ## 3. Rechenbeispiel (nur zur Veranschaulichung)
+
+Hinweis: Das Beispiel rechnet mit den ersten Startwerten (Angriffsintervalle je 1 s, 1 HP/s, früherer Wellenplan) und wurde für den Balance-Teststand 1 nicht neu berechnet.
 
 Alle Zahlen stammen aus der Tabelle (bestätigte Werte und Testwerte) und der Annahme a_p = 0,5. Sie sind keine Designaussage.
 

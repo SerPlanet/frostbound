@@ -89,12 +89,37 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
   );
 
   // --- Wellenplan: Summe je Schwierigkeitsgrad (REQ-CORE-002, REQ-DIF-002)
-  const expected: Record<Difficulty, number> = { gemuetlich: 25, normal: 40, winterhart: 60 };
+  const expected: Record<Difficulty, number> = { gemuetlich: 47, normal: 56, winterhart: 63 };
   for (const d of Object.keys(expected) as Difficulty[]) {
     const plan = createWorld(d, makeTestRandom()).spawnPlan;
     const total = plan.reduce((sum, e) => sum + e.count, 0);
     const sorted = plan.every((e, i) => i === 0 || plan[i - 1].atMs <= e.atMs);
     check(`REQ-DIF-002  Wellenplan ${d}: Summe ${expected[d]} und zeitlich sortiert`, total === expected[d] && sorted);
+  }
+  // --- Balance-Teststand 1: Zielwerte (bewusst als feste Zahlen, damit eine versehentliche Änderung auffällt)
+  {
+    check("Teststand 1  Angriffsintervalle: Spieler 700 ms, Geschütz 2500 ms", TESTWERTE.player.cooldownMs === 700 && TESTWERTE.turret.cooldownMs === 2500);
+    check("Teststand 1  Reparaturschritt: 5 HP je 2500 ms (2 HP/s, vorläufiger Testwert, bestätigt waren 5000 ms)", CONFIRMED.repairStepHp === 5 && TESTWERTE.repairStepMs === 2500);
+    const plans: Record<Difficulty, { atSec: number; count: number }[]> = {
+      gemuetlich: [...[0, 1, 2].map((i) => ({ atSec: 3 + 6 * i, count: 1 })), ...Array.from({ length: 10 }, (_, i) => ({ atSec: 25 + 5 * i, count: 3 })), ...Array.from({ length: 7 }, (_, i) => ({ atSec: 85 + i, count: 2 }))],
+      normal: [...[0, 1, 2, 3].map((i) => ({ atSec: 3 + 6 * i, count: 1 })), ...Array.from({ length: 10 }, (_, i) => ({ atSec: 26 + 5 * i, count: 3 })), ...Array.from({ length: 22 }, (_, i) => ({ atSec: 91 + i, count: 1 }))],
+      winterhart: [...[0, 1, 2, 3, 4].map((i) => ({ atSec: 3 + 5 * i, count: 1 })), ...Array.from({ length: 12 }, (_, i) => ({ atSec: 26 + 5 * i, count: 3 })), ...Array.from({ length: 22 }, (_, i) => ({ atSec: 91 + i, count: 1 }))],
+    };
+    for (const d of Object.keys(plans) as Difficulty[]) {
+      const plan = createWorld(d, makeTestRandom()).spawnPlan;
+      check(
+        `Teststand 1  Wellenplan ${d} entspricht der Vorgabe (Zeitpunkte und Gruppengrößen)`,
+        plan.length === plans[d].length && plan.every((e, i) => e.atMs === plans[d][i].atSec * 1000 && e.count === plans[d][i].count),
+      );
+    }
+    // Reparatur mit der echten Implementierung: 10 s in der Zone ergeben +20 HP (2 HP/s)
+    const rw = createWorld("normal", makeTestRandom());
+    rw.spawnPlan = [{ atMs: 1e12, count: 1 }];
+    rw.wagon.hp = 50;
+    rw.player.x = rw.wagon.zone.x + rw.wagon.zone.w / 2;
+    rw.player.y = rw.wagon.zone.y + 50;
+    for (let t = 0; t < 10000 - 1e-9; t += LAYOUT.stepMs) updateRepair(rw, LAYOUT.stepMs);
+    check("Teststand 1  Reparatur mit der echten Implementierung: 10 s in der Zone ergeben +20 HP", rw.wagon.hp === 70);
   }
   check("REQ-CORE-002 Wellenplan folgt der Konfiguration", createWorld("normal").spawnPlan.length === TESTWERTE.waves.normal.singles.count + TESTWERTE.waves.normal.groups.count + TESTWERTE.waves.normal.wave.count / TESTWERTE.waves.normal.wave.perSecond);
 
@@ -400,7 +425,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     const due = (world: World): number => world.spawnPlan.filter((e) => e.atMs <= world.timeMs).reduce((s, e) => s + e.count, 0);
 
     // 1 und 2: Spawning laut Wellenplan, Gesamtzahl je Schwierigkeitsgrad
-    const totals: Record<Difficulty, number> = { gemuetlich: 25, normal: 40, winterhart: 60 };
+    const totals: Record<Difficulty, number> = { gemuetlich: 47, normal: 56, winterhart: 63 };
     for (const d of Object.keys(totals) as Difficulty[]) {
       const world = fresh(d);
       // Sehr robuste Zugteile: Die Runde soll hier nicht vorzeitig durch eine Niederlage enden.
@@ -422,12 +447,13 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.timeMs = 40000;
       spawnEnemies(world);
+      const dueAt40 = world.spawnPlan.filter((e) => e.atMs <= 40000).reduce((sum, e) => sum + e.count, 0);
       const ids = new Set(world.enemies.map((e) => e.id));
       check(
         "REQ-ENM-001  Gegner erscheinen oberhalb des Spielfeldes (y = Spawn-y, nicht sichtbar) mit x im Spawnbereich",
-        world.enemies.length === 8 &&
-          world.stats.spawned === 8 &&
-          ids.size === 8 &&
+        world.enemies.length === dueAt40 &&
+          world.stats.spawned === dueAt40 &&
+          ids.size === dueAt40 &&
           world.enemies.every((e) => e.y === LAYOUT.enemySpawnY && e.y + 10 < 0 && e.x >= LAYOUT.enemySpawnXMin && e.x <= LAYOUT.enemySpawnXMax),
       );
       check("REQ-ENM-001  Gruppe erscheint gleichzeitig mit unterschiedlichen x-Positionen", new Set(world.enemies.map((e) => e.x)).size === world.enemies.length);
@@ -628,7 +654,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.timeMs = 200000;
       spawnEnemies(world);
-      return world.enemies.length === 40 && world.enemies.every((e) => e.hp === TESTWERTE.enemy.hp);
+      return world.enemies.length === 56 && world.enemies.every((e) => e.hp === TESTWERTE.enemy.hp);
     })());
   }
 
@@ -832,8 +858,8 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       }
       const interval = source === "player" ? TESTWERTE.player.cooldownMs : TESTWERTE.turret.cooldownMs;
       check(
-        `REQ-CMB-001  Feuerrate ${source === "player" ? "des Spielers" : "des Geschützes"} ist bei 120, 60 und 30 Schritten pro Sekunde gleich (erster Schuss sofort, dann alle 1000 ms: 11 Schüsse in 10 s)`,
-        results.every((r) => r.count === 11),
+        `REQ-CMB-001  Feuerrate ${source === "player" ? "des Spielers" : "des Geschützes"} ist bei 120, 60 und 30 Schritten pro Sekunde gleich (erster Schuss sofort, dann alle ${interval} ms: ${Math.floor(10000 / interval + 1e-9) + 1} Schüsse in 10 s)`,
+        results.every((r) => r.count === Math.floor(10000 / interval + 1e-9) + 1),
       );
       check(
         `REQ-CMB-001  Abstand zwischen zwei Schüssen entspricht dem Intervall (${interval} ms, Schrittgröße als Toleranz)`,
@@ -863,13 +889,16 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
     {
       const world = fresh();
+      // Sehr robuste Zugteile: Die Runde endet nicht vorzeitig durch eine Niederlage (passiver Spieler, Teststand 1).
+      world.locomotive.hp = world.locomotive.maxHp = 1e9;
+      world.wagon.hp = world.wagon.maxHp = 1e9;
       for (let i = 0; i < 9000; i++) stepWorld(world, { x: 0, y: 0 }, dt);
       const s = world.stats;
       check(
         "REQ-STA-001  Gesamtlauf mit Verteidigung: gespawnt = Spieler-Kills + Geschütz-Kills + Zug erreicht + noch aktiv",
-        s.spawned === 40 && s.killsByPlayer + s.killsByTurret + s.reachedTrain + world.enemies.length === s.spawned && s.killsByTurret > 0,
+        s.spawned === 56 && s.killsByPlayer + s.killsByTurret + s.reachedTrain + world.enemies.length === s.spawned && s.killsByTurret > 0,
       );
-      check("REQ-DIF-002  Mit Verteidigung kommen weniger Gegner durch als ohne (weniger als 20 am Zug, Schaden entsprechend 10 je Ankunft)", s.reachedTrain < 20 && s.damageByPart.locomotive + s.damageByPart.wagon === s.reachedTrain * CONFIRMED.enemyDamage);
+      check("REQ-DIF-002  Mit Verteidigung kommen weniger Gegner durch als ohne (weniger als alle gespawnten am Zug, Schaden entsprechend 10 je Ankunft)", s.reachedTrain < s.spawned && s.damageByPart.locomotive + s.damageByPart.wagon === s.reachedTrain * CONFIRMED.enemyDamage);
     }
   }
 
@@ -905,7 +934,10 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
   // --- Reparatur (REQ-REP-001 bis REQ-REP-006, REQ-PLR-003)
   {
     const dt = LAYOUT.stepMs;
-    const stepMs = CONFIRMED.repairStepMs;
+    const stepMs = TESTWERTE.repairStepMs;
+    // Alle Zeitangaben dieses Abschnitts sind für den bestätigten Schritt von 5000 ms geschrieben und werden auf
+    // den aktuell konfigurierten Schritt umgerechnet (Teststand: 2500 ms, bestätigt: 5000 ms).
+    const sc = (ms: number): number => (ms * stepMs) / 5000;
     const fresh = (): World => {
       const world = createWorld("normal", makeTestRandom());
       world.spawnPlan = [{ atMs: 1e12, count: 1 }]; // praktisch keine Gegner (und kein vorzeitiger Sieg): reine Reparaturprüfung
@@ -929,9 +961,9 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.wagon.hp = 50;
       intoZone(world, "wagon");
-      rep(world, 4900);
+      rep(world, sc(4900));
       const before = world.wagon.hp;
-      rep(world, 200);
+      rep(world, sc(200));
       check("REQ-REP-003  Reparatur beginnt in der Zone: nach 4,9 s noch keine HP, nach 5,1 s genau +5", before === 50 && world.wagon.hp === 55 && world.activeRepair === "wagon");
     }
     {
@@ -939,13 +971,13 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       world.wagon.hp = 50;
       world.locomotive.hp = 50;
       outOfZones(world);
-      rep(world, 30000);
+      rep(world, sc(30000));
       check("REQ-REP-003  Außerhalb der Zonen findet keine Reparatur statt", world.wagon.hp === 50 && world.locomotive.hp === 50 && world.wagon.repairProgressMs === 0 && world.activeRepair === null && world.stats.repairMsByPart.wagon === 0);
     }
     {
       const world = fresh();
       intoZone(world, "wagon");
-      rep(world, 20000);
+      rep(world, sc(20000));
       check("REQ-REP-002  Ein vollständig intaktes Teil wird nicht repariert (kein Fortschritt, keine aktive Reparatur)", world.wagon.hp === 100 && world.wagon.repairProgressMs === 0 && world.activeRepair === null);
     }
 
@@ -954,24 +986,24 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.wagon.hp = 50;
       intoZone(world, "wagon");
-      rep(world, 3000);
+      rep(world, sc(3000));
       const progress = world.wagon.repairProgressMs;
       outOfZones(world);
-      rep(world, 10000);
-      check("REQ-REP-003  Verlassen der Zone pausiert: Fortschritt bleibt exakt erhalten, keine HP", world.wagon.repairProgressMs === progress && world.wagon.hp === 50 && progress > 2900 && progress < 3100 && world.activeRepair === null);
+      rep(world, sc(10000));
+      check("REQ-REP-003  Verlassen der Zone pausiert: Fortschritt bleibt exakt erhalten, keine HP", world.wagon.repairProgressMs === progress && world.wagon.hp === 50 && progress > sc(2900) && progress < sc(3100) && world.activeRepair === null);
       intoZone(world, "wagon");
-      rep(world, 1900);
+      rep(world, sc(1900));
       const mid = world.wagon.hp;
-      rep(world, 200);
+      rep(world, sc(200));
       check("REQ-REP-003  Wiedereintritt setzt fort: nach insgesamt 5 s Anwesenheit (3 s + 2 s) +5 HP", mid === 50 && world.wagon.hp === 55);
       // Innerhalb der Zone frei bewegen
       world.player.x = world.wagon.zone.x + 5;
       world.player.y = world.wagon.zone.y + 5;
       const p1 = world.wagon.repairProgressMs;
-      rep(world, 1000);
+      rep(world, sc(1000));
       world.player.x = world.wagon.zone.x + world.wagon.zone.w - 5;
-      rep(world, 1000);
-      check("REQ-REP-003  Bewegung innerhalb der Zone unterbricht die Reparatur nicht", world.wagon.repairProgressMs > p1 + 1900);
+      rep(world, sc(1000));
+      check("REQ-REP-003  Bewegung innerhalb der Zone unterbricht die Reparatur nicht", world.wagon.repairProgressMs > p1 + sc(1900));
     }
 
     // Rate: 5 HP alle 5 s, bildratenunabhängig
@@ -994,7 +1026,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
         }
       }
       check("REQ-REP-003  Genau 5 HP je Reparaturschritt (20 Schritte von 0 auf 100)", gains.length === 20 && gains.every((g) => g === 5));
-      check("REQ-REP-003  Eine vollständige Reparatur von 0 auf 100 HP dauert 100 Sekunden", Math.abs(t - 100000) <= dt + 1e-6);
+      check("REQ-REP-003  Eine vollständige Reparatur von 0 auf 100 HP dauert 20 Schritte (bestätigt 100 s bei 5000 ms, Teststand 50 s bei 2500 ms)", Math.abs(t - sc(100000)) <= dt + 1e-6);
     }
     {
       const counts: number[] = [];
@@ -1002,15 +1034,15 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
         const world = fresh();
         world.wagon.hp = 20;
         intoZone(world, "wagon");
-        rep(world, 50000, step);
+        rep(world, sc(50000), step);
         counts.push(world.wagon.hp);
       }
       check("REQ-REP-003  Reparaturfortschritt ist bildratenunabhängig (nach 50 s bei 120, 60, 30 Schritten/s: je 20 + 50 = 70 HP)", counts.every((c) => c === 70));
       const big = fresh();
       big.wagon.hp = 50;
       intoZone(big, "wagon");
-      updateRepair(big, 12000);
-      check("REQ-REP-003  Ein sehr großer Zeitschritt (12 s) liefert 2 Schritte (+10 HP) und behält 2 s Rest", big.wagon.hp === 60 && Math.abs(big.wagon.repairProgressMs - 2000) < 1e-6);
+      updateRepair(big, sc(12000));
+      check("REQ-REP-003  Ein sehr großer Zeitschritt (12 s) liefert 2 Schritte (+10 HP) und behält 2 s Rest", big.wagon.hp === 60 && Math.abs(big.wagon.repairProgressMs - sc(2000)) < 1e-6);
     }
 
     // Nur ein Teil gleichzeitig
@@ -1019,10 +1051,10 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       world.wagon.hp = 50;
       world.locomotive.hp = 50;
       intoZone(world, "wagon");
-      rep(world, 10000);
+      rep(world, sc(10000));
       check("REQ-REP-004  Es wird nur das Teil in der Zone des Spielers repariert (Wagon 60, Lokomotive unverändert)", world.wagon.hp === 60 && world.locomotive.hp === 50 && world.locomotive.repairProgressMs === 0);
       intoZone(world, "locomotive");
-      rep(world, 5100);
+      rep(world, sc(5100));
       check("REQ-REP-004  Wechsel in die andere Zone: nun nur die Lokomotive (60), der Wagon behält seinen Stand", world.locomotive.hp === 55 && world.wagon.hp === 60);
     }
     {
@@ -1032,7 +1064,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       world.locomotive.zone = { ...world.wagon.zone }; // künstlich überlappende Zonen (Prototyp-Konfiguration hat keine)
       intoZone(world, "wagon");
       let bothGrew = false;
-      for (let i = 0; i < 2000; i++) {
+      for (let i = 0; i < Math.round((2000 * stepMs) / 5000); i++) {
         const w0 = world.wagon.repairProgressMs + world.wagon.hp;
         const l0 = world.locomotive.repairProgressMs + world.locomotive.hp;
         updateRepair(world, dt);
@@ -1047,14 +1079,14 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       damageTrainPart(world, "wagon", 1000);
       world.events.length = 0;
       intoZone(world, "wagon");
-      rep(world, 50000);
+      rep(world, sc(50000));
       check("REQ-REP-005  Ein zerstörter Wagon bleibt bei halber Reparatur (50 HP) zerstört, ebenso das Geschütz, ohne Ereignis partRepaired", world.wagon.hp === 50 && world.wagon.destroyed && world.turret.destroyed && world.turret.hp === 0 && !world.events.some((e) => e.type === "partRepaired"));
       let picksWagon = false;
       for (let i = 0; i < 100; i++) if (chooseTarget(world) === "wagon") picksWagon = true;
       check("REQ-REP-006  Ein zerstörter Wagon in Reparatur ist kein gültiges Gegnerziel", !picksWagon && !isTurretFunctional(world));
-      rep(world, 49000);
+      rep(world, sc(49000));
       check("REQ-REP-005  Kurz vor dem Abschluss (nach 99 s: 95 HP) ist der Wagon noch zerstört", world.wagon.hp === 95 && world.wagon.destroyed);
-      rep(world, 6000);
+      rep(world, sc(6000));
       check("REQ-REP-005  Mit dem vollständigen Abschluss (100 HP) ist der Wagon wieder intakt und betriebsbereit", world.wagon.hp === 100 && !world.wagon.destroyed && getPartCondition(world.wagon) === "intact" && world.events.some((e) => e.type === "partRepaired" && e.part === "wagon"));
       let picksAgain = false;
       for (let i = 0; i < 200; i++) if (chooseTarget(world) === "wagon") picksAgain = true;
@@ -1065,7 +1097,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       damageTrainPart(world, "locomotive", 1000);
       intoZone(world, "locomotive");
-      rep(world, 100000 + 100);
+      rep(world, sc(100000 + 100));
       check("REQ-REP-005  Auch die Lokomotive wird nach 100 s wieder intakt (ohne Zusatzwirkung auf Wagon und Geschütz)", world.locomotive.hp === 100 && !world.locomotive.destroyed && world.wagon.hp === 100 && !world.turret.destroyed && world.turret.hp === 20);
     }
 
@@ -1075,7 +1107,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       world.turret.hp = 3; // früherer Zustand irrelevant
       damageTrainPart(world, "wagon", 1000);
       intoZone(world, "wagon");
-      rep(world, 100000 + 100);
+      rep(world, sc(100000 + 100));
       check("REQ-REP-005  Die Reparatur des zerstörten Wagons stellt das Geschütz vollständig wieder her (20/20) und aktiviert es", world.wagon.hp === 100 && world.turret.hp === 20 && !world.turret.destroyed && isTurretFunctional(world));
       const enemy1: Enemy = { id: 1, x: 900, y: 300, hp: 3, target: "wagon" };
       world.enemies.push(enemy1);
@@ -1088,7 +1120,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       damageTurret(world, 5);
       damageTrainPart(world, "wagon", 40);
       intoZone(world, "wagon");
-      rep(world, 40000);
+      rep(world, sc(40000));
       check("REQ-REP-005  Ein nur beschädigter Wagon bleibt vom Geschütz unabhängig: Reparatur des Wagons ändert das Geschütz nicht", world.wagon.hp === 100 && world.turret.hp === 15 && !world.turret.destroyed);
     }
     {
@@ -1096,7 +1128,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       damageTrainPart(world, "wagon", 1000);
       damageTrainPart(world, "locomotive", 50);
       intoZone(world, "locomotive");
-      rep(world, 50000);
+      rep(world, sc(50000));
       check("REQ-REP-005  Die Reparatur der Lokomotive stellt das Geschütz nicht her (nur die Wagon-Reparatur)", world.locomotive.hp === 100 && world.wagon.destroyed && world.turret.destroyed);
     }
 
@@ -1105,9 +1137,9 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.wagon.hp = 50;
       intoZone(world, "wagon");
-      rep(world, 10000);
+      rep(world, sc(10000));
       check("REQ-REP-001  Reparatur ist kostenlos: kein Ressourcenzustand vorhanden oder nötig", !("resources" in world) && world.wagon.hp === 60);
-      check("REQ-STA-001  Reparaturzeit wird je Zugteil als aktive Reparaturzeit erfasst (10 s am Wagon, 0 an der Lokomotive)", Math.abs(world.stats.repairMsByPart.wagon - 10000) < 20 && world.stats.repairMsByPart.locomotive === 0);
+      check("REQ-STA-001  Reparaturzeit wird je Zugteil als aktive Reparaturzeit erfasst (10 s am Wagon, 0 an der Lokomotive)", Math.abs(world.stats.repairMsByPart.wagon - sc(10000)) < 20 && world.stats.repairMsByPart.locomotive === 0);
     }
 
     // Integration über stepWorld: Spielerangriff läuft während der Reparatur
@@ -1202,6 +1234,9 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     {
       // Sieg nicht zu früh und nicht zu spät: Invarianten über einen kompletten Lauf mit Verteidigung
       const world = fresh();
+      // Sehr robuste Zugteile: Ein passiver Spieler verliert im Teststand 1 absichtlich, hier wird nur die Siegbedingung geprüft.
+      world.locomotive.hp = world.locomotive.maxHp = 1e9;
+      world.wagon.hp = world.wagon.maxHp = 1e9;
       let tooEarly = false;
       let tooLate = false;
       let wonAt = -1;
@@ -1219,7 +1254,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const lastSpawn = world.spawnPlan[world.spawnPlan.length - 1].atMs;
       check("REQ-WL-003  Sieg tritt nie zu früh ein und kommt sofort, wenn alles verarbeitet ist (Lauf Normal mit Verteidigung)", !tooEarly && !tooLate && world.status === "won" && wonAt >= lastSpawn);
       const s = world.stats;
-      check("REQ-STA-001  Bei Sieg gilt: gespawnt = Spieler-Kills + Geschütz-Kills + Zug erreicht", s.spawned === 40 && s.killsByPlayer + s.killsByTurret + s.reachedTrain === 40);
+      check("REQ-STA-001  Bei Sieg gilt: gespawnt = Spieler-Kills + Geschütz-Kills + Zug erreicht", s.spawned === 56 && s.killsByPlayer + s.killsByTurret + s.reachedTrain === 56);
     }
     {
       const pending = noDefense(withPlan(fresh(), [{ atMs: 50000, count: 1 }]));
@@ -1362,7 +1397,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const pristine = createWorld("normal", makeTestRandom());
       check(
         "REQ-WL-004  Neustart erzeugt eine vollständig frische Runde (gleicher Zustand wie die erste Runde, alle Werte zurückgesetzt)",
-        JSON.stringify(again) === JSON.stringify(pristine) && again.status === "running" && again.timeMs === 0 && again.enemies.length === 0 && again.nextSpawnIndex === 0 && again.stats.spawned === 0 && again.stats.reachedTrain === 0 && again.locomotive.hp === 100 && again.wagon.hp === 100 && again.turret.hp === 20 && again.spawnPlan.length === 20,
+        JSON.stringify(again) === JSON.stringify(pristine) && again.status === "running" && again.timeMs === 0 && again.enemies.length === 0 && again.nextSpawnIndex === 0 && again.stats.spawned === 0 && again.stats.reachedTrain === 0 && again.locomotive.hp === 100 && again.wagon.hp === 100 && again.turret.hp === 20 && again.spawnPlan.length === TESTWERTE.waves.normal.singles.count + TESTWERTE.waves.normal.groups.count + TESTWERTE.waves.normal.wave.count / TESTWERTE.waves.normal.wave.perSecond,
       );
       check("REQ-WL-004  Die alte Runde beeinflusst die neue nicht (keine gemeinsamen Objekte)", old.status === "won" && again.player.x === LAYOUT.playerStart.x && again.spawnPlan !== old.spawnPlan && again.stats !== old.stats);
       check("REQ-DIF-001  Jeder der drei Schwierigkeitsgrade startet eine laufende Runde mit dem gewählten Profil", (["gemuetlich", "normal", "winterhart"] as const).every((d) => createWorld(d).difficulty === d && createWorld(d).status === "running"));

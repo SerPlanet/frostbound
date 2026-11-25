@@ -24,11 +24,11 @@ Dieser Wellenplan ist ein **vorläufiger Startsatz** im Sinne von D-045. Er folg
 
 | Grad | Gesamtzahl N | Phase 1: einzelne Gegner | Phase 2: kleine Gruppen | Phase 3: große Welle |
 |---|---:|---|---|---|
-| Gemütlich | 25 | 3 Einzelne, Abstand 6 s, ab t = 3 | 4 Gruppen à 3 (12), Abstand 8 s, ab t = 30 | 10 Gegner, 1 pro Sekunde, ab t = 75 |
-| Normal | 40 | 5 Einzelne, Abstand 6 s, ab t = 3 | 5 Gruppen à 3 (15), Abstand 8 s, ab t = 40 | 20 Gegner, 2 pro Sekunde, ab t = 95 |
-| Winterhart | 60 | 6 Einzelne, Abstand 5 s, ab t = 3 | 6 Gruppen à 4 (24), Abstand 7 s, ab t = 36 | 30 Gegner, 3 pro Sekunde, ab t = 100 |
+| Gemütlich | 47 | 3 Einzelne, Abstand 6 s, ab t = 3 | 10 Gruppen à 3 (30), Abstand 5 s, ab t = 25 | 14 Gegner, 2 pro Sekunde, ab t = 85 |
+| Normal | 56 | 4 Einzelne, Abstand 6 s, ab t = 3 | 10 Gruppen à 3 (30), Abstand 5 s, ab t = 26 | 22 Gegner, 1 pro Sekunde, ab t = 91 |
+| Winterhart | 63 | 5 Einzelne, Abstand 5 s, ab t = 3 | 12 Gruppen à 3 (36), Abstand 5 s, ab t = 26 | 22 Gegner, 1 pro Sekunde, ab t = 91 |
 
-Summen: Gemütlich 3 + 12 + 10 = 25, Normal 5 + 15 + 20 = 40, Winterhart 6 + 24 + 30 = 60. Die Zeitpunkte sind als Daten in der Konfiguration abgelegt. Eine Gruppe spawnt gleichzeitig, jeder Gegner an einer zufälligen horizontalen Position (TECH-10). Die Pause vor der großen Welle ergibt sich aus den Zeitpunkten.
+**Balance-Teststand 1** (TESTWERT, nicht bestätigt; ersetzt die ersten Startwerte, zusammen mit den geänderten Angriffsintervallen und der Reparaturgeschwindigkeit, siehe [balance-and-statistics.md](balance-and-statistics.md)). Summen: Gemütlich 3 + 30 + 14 = 47, Normal 4 + 30 + 22 = 56, Winterhart 5 + 36 + 22 = 63. Die Zeitpunkte sind als Daten in der Konfiguration abgelegt. Eine Gruppe spawnt gleichzeitig, jeder Gegner an einer zufälligen horizontalen Position (TECH-10). Die Pause vor der großen Welle ergibt sich aus den Zeitpunkten.
 
 ## Anforderungen
 
