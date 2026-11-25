@@ -1,8 +1,12 @@
 // Visuals-Test (REQ-TST-001, TECH-13): statische Darstellung vorgegebener Zustände.
 // Es läuft keine Simulation und stepWorld wird nicht aufgerufen. Die Zustände sind
 // von Hand gesetzte Beispieldaten, keine Ergebnisse von Spielregeln.
+// Nur in diesem Testmodus: Die Tasten Q, E, T lösen Schaden über die Schadenslogik aus
+// (game/train.ts), R setzt den aktuellen Zustand zurück. Im normalen Spiel gibt es das nicht.
 
 import Phaser from "phaser";
+import { CONFIRMED } from "../config.ts";
+import { damageTrainPart, damageTurret } from "../game/train.ts";
 import { createWorld } from "../game/world.ts";
 import type { TrainPart, World } from "../game/types.ts";
 import { Hud } from "../view/Hud.ts";
@@ -93,6 +97,8 @@ export class VisualsScene extends Phaser.Scene {
   private hud!: Hud;
   private titleText!: Phaser.GameObjects.Text;
   private index = 0;
+  private world!: World;
+  private options: DrawOptions | undefined;
 
   constructor() {
     super("Visuals");
@@ -107,8 +113,17 @@ export class VisualsScene extends Phaser.Scene {
       fontSize: "14px",
       color: "#8aa4bf",
     });
+    this.add.text(16, 98, "Schaden (10): Q Lokomotive, E Wagon, T Geschütz. R: aktuellen Zustand zurücksetzen.", {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "14px",
+      color: "#8aa4bf",
+    });
 
     NUMBER_KEYS.forEach((key, i) => this.input.keyboard?.on(`keydown-${key}`, () => this.show(i)));
+    this.input.keyboard?.on("keydown-Q", () => this.applyDamage(() => damageTrainPart(this.world, "locomotive", CONFIRMED.enemyDamage)));
+    this.input.keyboard?.on("keydown-E", () => this.applyDamage(() => damageTrainPart(this.world, "wagon", CONFIRMED.enemyDamage)));
+    this.input.keyboard?.on("keydown-T", () => this.applyDamage(() => damageTurret(this.world, CONFIRMED.enemyDamage)));
+    this.input.keyboard?.on("keydown-R", () => this.show(this.index));
     this.input.keyboard?.on("keydown-LEFT", () => this.show((this.index + STATES.length - 1) % STATES.length));
     this.input.keyboard?.on("keydown-RIGHT", () => this.show((this.index + 1) % STATES.length));
     this.show(0);
@@ -117,8 +132,20 @@ export class VisualsScene extends Phaser.Scene {
   private show(index: number): void {
     this.index = index;
     const { world, options } = STATES[index].build();
-    this.view.draw(world, options);
-    this.hud.update(world);
+    this.world = world;
+    this.options = options;
     this.titleText.setText(STATES[index].title);
+    this.redraw();
+  }
+
+  private applyDamage(damage: () => number): void {
+    damage();
+    this.titleText.setText(`${STATES[this.index].title}   [Schaden angewendet, R setzt zurück]`);
+    this.redraw();
+  }
+
+  private redraw(): void {
+    this.view.draw(this.world, this.options);
+    this.hud.update(this.world);
   }
 }

@@ -2,7 +2,8 @@
 // Ausführen: node src/tests/selftest.ts   (Node 22, native TypeScript-Unterstützung)
 // Importiert nur game/ und config.ts, keine Browser-APIs, kein Phaser.
 
-import { LAYOUT, TESTWERTE } from "../config.ts";
+import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
+import { damageTrainPart, damageTurret, getPartCondition } from "../game/train.ts";
 import { createWorld, stepWorld } from "../game/world.ts";
 import type { Difficulty, PlayerInput, Rect, World } from "../game/types.ts";
 
@@ -249,6 +250,123 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
 
     check("REQ-PLR-002  Spieler hat weiterhin keine Lebenspunkte", !("hp" in fresh().player));
+  }
+
+  // --- Zug: Schaden und Zerstörung (REQ-TRN-003, REQ-TRN-004, REQ-TRN-005)
+  {
+    const fresh = (): World => createWorld("normal", makeTestRandom());
+    const dmg = CONFIRMED.enemyDamage;
+
+    {
+      const world = fresh();
+      const applied = damageTrainPart(world, "locomotive", dmg);
+      check("REQ-TRN-004  10 Schaden reduzieren die Lokomotive von 100 auf 90", applied === 10 && world.locomotive.hp === 90 && !world.locomotive.destroyed);
+      check("REQ-TRN-004  Der Schaden wird je Zugteil in der Statistik erfasst", world.stats.damageByPart.locomotive === 10 && world.stats.damageByPart.wagon === 0);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", dmg);
+      check("REQ-TRN-004  Der Schaden ist für Lokomotive und Wagon identisch", world.wagon.hp === 90);
+    }
+    {
+      const world = fresh();
+      for (let i = 0; i < 3; i++) damageTrainPart(world, "wagon", dmg);
+      check("REQ-TRN-004  Wiederholter Schaden reduziert die HP korrekt (3 mal 10: 70)", world.wagon.hp === 70 && world.stats.damageByPart.wagon === 30);
+    }
+    {
+      const world = fresh();
+      for (let i = 0; i < 9; i++) damageTrainPart(world, "locomotive", dmg);
+      check("REQ-TRN-003  Bei 90 Schaden bleibt die Lokomotive bei 10 HP und intakt", world.locomotive.hp === 10 && !world.locomotive.destroyed);
+      damageTrainPart(world, "locomotive", dmg);
+      check("REQ-TRN-003  Bei 0 HP wird das Zugteil zerstört", world.locomotive.hp === 0 && world.locomotive.destroyed);
+      check("REQ-TRN-003  Zerstörung erzeugt genau ein Ereignis partDestroyed", world.events.filter((e) => e.type === "partDestroyed").length === 1);
+    }
+    {
+      const world = fresh();
+      world.locomotive.hp = 5;
+      const applied = damageTrainPart(world, "locomotive", dmg);
+      check("REQ-TRN-003  HP fallen nie unter 0 (Schaden 10 bei 5 HP: 0 HP, angewendet 5)", world.locomotive.hp === 0 && applied === 5 && world.stats.damageByPart.locomotive === 5);
+      const big = fresh();
+      damageTrainPart(big, "wagon", 100000);
+      check("REQ-TRN-003  Sehr großer Schaden: 0 HP, nur 100 angewendet, zerstört", big.wagon.hp === 0 && big.wagon.destroyed && big.stats.damageByPart.wagon === 100);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "locomotive", 1000);
+      const before = JSON.stringify(world);
+      const applied = damageTrainPart(world, "locomotive", dmg);
+      check("REQ-TRN-003  Weiterer Schaden an einem zerstörten Teil ändert nichts (HP, Status, Statistik, Ereignisse)", applied === 0 && JSON.stringify(world) === before && world.locomotive.hp === 0 && world.locomotive.destroyed);
+    }
+    {
+      const world = fresh();
+      for (const bad of [0, -5, Number.NaN]) damageTrainPart(world, "wagon", bad);
+      damageTurret(world, -3);
+      check("REQ-TRN-003  Schaden 0, negativ oder ungültig wird ignoriert", world.wagon.hp === 100 && world.turret.hp === 20 && world.stats.damageByPart.wagon === 0);
+    }
+
+    // Wagon und Geschütz
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", 1000);
+      check("REQ-TRN-005  Zerstörung des Wagons zerstört auch das Geschütz", world.wagon.destroyed && world.turret.destroyed && world.turret.hp === 0);
+      check("REQ-TRN-005  Zerstörter Wagon: Ereignisse partDestroyed und turretDestroyed", world.events.some((e) => e.type === "partDestroyed" && e.part === "wagon") && world.events.some((e) => e.type === "turretDestroyed"));
+      check("REQ-TRN-005  Die Zerstörung des Wagons lässt die Lokomotive unberührt", world.locomotive.hp === 100 && !world.locomotive.destroyed);
+    }
+    {
+      const world = fresh();
+      world.turret.hp = 3;
+      damageTrainPart(world, "wagon", 1000);
+      check("REQ-TRN-005  Der vorherige HP-Zustand des Geschützes ist irrelevant (3 HP: zerstört)", world.turret.destroyed && world.turret.hp === 0);
+    }
+    {
+      const world = fresh();
+      damageTurret(world, 20);
+      damageTrainPart(world, "wagon", 1000);
+      check("REQ-TRN-005  Bereits zerstörtes Geschütz bleibt bei Wagon-Zerstörung gültig und erzeugt kein zweites Ereignis", world.turret.destroyed && world.turret.hp === 0 && world.events.filter((e) => e.type === "turretDestroyed").length === 1);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", 99);
+      check("REQ-TRN-005  Beschädigter, nicht zerstörter Wagon (1 HP): das Geschütz bleibt funktionsfähig", world.wagon.hp === 1 && !world.wagon.destroyed && !world.turret.destroyed && world.turret.hp === 20);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "locomotive", 60);
+      check("REQ-TRN-003  Schaden an der Lokomotive beeinflusst Wagon und Geschütz nicht", world.wagon.hp === 100 && !world.wagon.destroyed && world.turret.hp === 20 && !world.turret.destroyed);
+      damageTrainPart(world, "locomotive", 1000);
+      check("REQ-TRN-003  Auch eine zerstörte Lokomotive lässt Wagon und Geschütz unberührt", world.locomotive.destroyed && world.wagon.hp === 100 && !world.wagon.destroyed && !world.turret.destroyed && world.turret.hp === 20);
+    }
+    {
+      const world = fresh();
+      const applied = damageTurret(world, 5);
+      check("REQ-TRN-005  Schaden am Geschütz: 20 auf 15 HP, der Wagon bleibt unberührt", applied === 5 && world.turret.hp === 15 && world.wagon.hp === 100 && !world.wagon.destroyed);
+      damageTurret(world, 1000);
+      check("REQ-TRN-005  Zerstörtes Geschütz auf intaktem Wagon: Wagon bleibt intakt und funktionsfähig", world.turret.destroyed && world.turret.hp === 0 && !world.wagon.destroyed && world.wagon.hp === 100);
+      const before = JSON.stringify(world);
+      damageTurret(world, dmg);
+      check("REQ-TRN-005  Weiterer Schaden am zerstörten Geschütz ändert nichts", JSON.stringify(world) === before && world.turret.hp === 0);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "locomotive", 1000);
+      damageTrainPart(world, "wagon", 1000);
+      check("REQ-TRN-003  Schritt 5 beendet die Runde nicht (Niederlagenlogik folgt in Schritt 9)", world.status === "running");
+    }
+
+    // Zustände, die die Darstellung verwendet (getPartCondition)
+    {
+      const world = fresh();
+      const c0 = getPartCondition(world.wagon);
+      damageTrainPart(world, "wagon", 10);
+      const c1 = getPartCondition(world.wagon);
+      damageTrainPart(world, "wagon", 1000);
+      const c2 = getPartCondition(world.wagon);
+      const repairing = fresh();
+      repairing.wagon.hp = 50;
+      repairing.wagon.destroyed = true;
+      check("Darstellung   Zustand intakt, beschädigt, zerstört wird aus dem Weltzustand abgeleitet", c0 === "intact" && c1 === "damaged" && c2 === "destroyed");
+      check("Darstellung   Zerstörter Wagon mit steigenden HP (Reparatur) gilt weiter als zerstört", getPartCondition(repairing.wagon) === "destroyed");
+    }
   }
 
   // --- Konfiguration (REQ-ARC-004)

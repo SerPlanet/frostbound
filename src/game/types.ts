@@ -84,6 +84,7 @@ export type GameEvent =
   | { type: "enemyDefeated"; enemyId: number; source: AttackSource }
   | { type: "enemyReachedTrain"; enemyId: number; part: PartId }
   | { type: "partDestroyed"; part: PartId }
+  | { type: "turretDestroyed" }
   | { type: "partRepaired"; part: PartId }
   | { type: "shot"; source: AttackSource; fromX: number; fromY: number; toX: number; toY: number };
 

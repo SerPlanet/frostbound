@@ -47,7 +47,7 @@ export class Hud {
 
     this.values[0].setText(partText(world.locomotive));
     this.values[1].setText(partText(world.wagon));
-    this.values[2].setText(world.turret.destroyed ? "ZERSTÖRT" : "bereit");
+    this.values[2].setText(partText(world.turret));
     this.values[3].setText(String(total - handled));
     this.values[4].setText(DIFFICULTY_LABELS[world.difficulty]);
   }

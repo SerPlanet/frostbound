@@ -4,6 +4,7 @@
 
 import Phaser from "phaser";
 import { LAYOUT } from "../config.ts";
+import { getPartCondition } from "../game/train.ts";
 import type { Rect, TrainPart, World } from "../game/types.ts";
 
 export interface DrawOptions {
@@ -31,12 +32,14 @@ const COLOR = {
 
 /** Anzeigeregel: Eine Reparaturzone wird gezeigt, wenn das Objekt repariert werden kann (REQ-REP-002). */
 function isRepairable(part: TrainPart): boolean {
-  return part.destroyed || part.hp < part.maxHp;
+  return getPartCondition(part) !== "intact";
 }
 
+/** Farbe aus dem Zustand des Teils (intakt grün, beschädigt gelb, zerstört dunkelrot). */
 function partColor(part: TrainPart): number {
-  if (part.destroyed) return COLOR.destroyed;
-  if (part.hp < part.maxHp) return COLOR.damaged;
+  const condition = getPartCondition(part);
+  if (condition === "destroyed") return COLOR.destroyed;
+  if (condition === "damaged") return COLOR.damaged;
   return COLOR.intact;
 }
 
@@ -146,10 +149,11 @@ export class WorldView {
   private drawTurret(world: World): void {
     const g = this.g;
     const t = world.turret;
+    const condition = getPartCondition(t);
     const color = t.destroyed ? COLOR.destroyed : COLOR.turretBarrel;
     g.lineStyle(8, color, 1);
     g.lineBetween(t.x, t.y, t.x, t.y - 34);
-    g.fillStyle(t.destroyed ? COLOR.destroyed : COLOR.intact, 1);
+    g.fillStyle(condition === "destroyed" ? COLOR.destroyed : condition === "damaged" ? COLOR.damaged : COLOR.intact, 1);
     g.fillCircle(t.x, t.y, 16);
     g.lineStyle(3, COLOR.outline, 1);
     g.strokeCircle(t.x, t.y, 16);

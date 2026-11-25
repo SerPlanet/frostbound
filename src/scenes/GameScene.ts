@@ -13,6 +13,7 @@ export class GameScene extends Phaser.Scene {
   private difficulty: Difficulty = "normal";
   private world!: World;
   private view!: WorldView;
+  private hud!: Hud;
   private readInput!: () => PlayerInput;
   private accumulatorMs = 0;
 
@@ -31,9 +32,9 @@ export class GameScene extends Phaser.Scene {
     this.readInput = createKeyboardInput(this);
 
     this.view = new WorldView(this);
-    const hud = new Hud(this);
+    this.hud = new Hud(this);
     this.view.draw(this.world);
-    hud.update(this.world);
+    this.hud.update(this.world);
 
     // Platzhalter bis Schritt 9: Zugang zum Ergebnisbildschirm und zurück zum Start.
     this.add
@@ -53,5 +54,6 @@ export class GameScene extends Phaser.Scene {
       this.accumulatorMs -= LAYOUT.stepMs;
     }
     this.view.draw(this.world);
+    this.hud.update(this.world);
   }
 }
