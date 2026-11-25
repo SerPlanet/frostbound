@@ -241,7 +241,7 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 - **Problemstellung:** Überdimensionierung verzögert den Prototyp.
 - **Ziel:** So wenig Struktur wie nötig.
 - **Gewünschtes Verhalten:** Nur die Module aus Abschnitt 7. Keine Plug-in-Systeme, keine allgemeinen Entity-Frameworks, keine Vorbereitung für zusätzliche Waggons, Geschütze, Gegnertypen oder Progression. Spätere Erweiterungen sollen nicht unmöglich sein, werden aber nicht vorbereitet.
-- **Akzeptanzkriterien:** (1) Abhängigkeiten nur `phaser`, `typescript`, `vite`. (2) Keine Mechanismen für nicht im Prototyp enthaltene Inhalte. (3) Keine Entwickler-Dashboards.
+- **Akzeptanzkriterien:** (1) Abhängigkeiten nur `phaser`, `typescript`, `vite`. (2) Keine Mechanismen für nicht im ersten Gameplay-Prototyp enthaltene Inhalte (für Funktionen des erweiterten Gesamtprototyps, D-062, gilt: erst nach der jeweiligen Funktionsentscheidung und Abstimmung nach D-033 b). (3) Keine Entwickler-Dashboards.
 - **Testfälle:** Review von `package.json` und der Dateiliste.
 - **Abhängigkeiten:** –
 - **Entscheidungsstatus:** CONFIRMED (D-059, D-060).

@@ -18,7 +18,7 @@ Der erste Gameplay-Prototyp ist umgesetzt (Greybox, Phaser 3, TypeScript, Vite) 
 
 Phaser 3 mit TypeScript und Vite ist als Technologie bestätigt (CONFIRMED: D-026, D-049) und im Projekt eingerichtet. Veröffentlichung über GitHub Pages, Testversionen siehe [technical/deployment-and-previews.md](../technical/deployment-and-previews.md).
 
-## Langzeitvision: Adventskalender (nicht Teil des Prototyps)
+## Langzeitvision: Adventskalender (nicht Teil des ersten Gameplay-Prototyps, Ansätze seit D-062 im erweiterten Gesamtprototyp)
 
 Dieser Abschnitt beschreibt die langfristige Vision. Der Adventskalender war **nicht** Bestandteil des ersten Gameplay-Prototyps (CONFIRMED: D-027). Einzelne Ansätze (Adventstür, Tageswechsel) gehören seit D-062 zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN (Q-016).
 
@@ -32,7 +32,7 @@ Dieser Abschnitt beschreibt die langfristige Vision. Der Adventskalender war **n
 
 Konsequenz: Der erste Gameplay-Prototyp enthält keine Kalenderlogik, kein Türchen-UI und keine tagesbasierten Inhalte. Im erweiterten Gesamtprototyp (D-062) werden Adventstüren und Tageswechsel als einzelne Funktionen entwickelt und getestet, sobald ihre Regeln entschieden sind. Das vollständige 24-Tage-Spiel folgt erst nach der Akzeptanz des erweiterten Gesamtprototyps.
 
-## Langzeitvision: Ressourcen und Progression (nicht Teil des Prototyps)
+## Langzeitvision: Ressourcen und Progression (nicht Teil des ersten Gameplay-Prototyps, Ausschnitte seit D-062 im erweiterten Gesamtprototyp)
 
 Langzeitplanung. Der erste Gameplay-Prototyp enthielt keine dieser Mechaniken (CONFIRMED: D-046). Einzelne Ausschnitte (Belohnungen, Upgrades) gehören seit D-062 zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN (Q-006, Q-012).
 

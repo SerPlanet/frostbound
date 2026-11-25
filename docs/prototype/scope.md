@@ -80,11 +80,11 @@ Die Architektur darf Erweiterungen nicht unmöglich machen, bereitet sie aber ni
 
 - Audio ist weder bestätigt noch ausgeschlossen (Q-032). Es ist nicht im Implementierungsplan.
 - Bauen: durch Nähe bestätigt (D-020). Es gibt im Prototyp nichts zu bauen, siehe Q-010 (zur Bestätigung).
-- Upgrade- und Progressionssysteme des Vollspiels (Q-012) sind offen. Sie sind lediglich nicht Teil des Prototyps.
+- Upgrade- und Progressionssysteme des Vollspiels (Q-012) sind offen. Sie waren nicht Teil des ersten Gameplay-Prototyps. Einzelne Ausschnitte gehören seit D-062 zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN.
 
 ## Prototyp und Vollspiel
 
-Langzeitinhalte stehen nur in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie erzeugen keine Prototyp-Anforderungen.
+Langzeitinhalte stehen nur in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie erzeugen keine Anforderungen an den ersten Gameplay-Prototyp. Für den erweiterten Gesamtprototyp (D-062) entstehen Anforderungen erst mit der jeweiligen Funktionsentscheidung.
 
 ## Erfolg
 

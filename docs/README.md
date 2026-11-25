@@ -15,6 +15,8 @@
 | **TESTWERT** | Vorläufiger Zahlenwert zum Testen (D-045). Wird anhand von Spieltests angepasst, nicht bestätigt. |
 | **TECH** | Technische Entscheidung des ausführenden Agenten (D-060). Revidierbar, ändert keine bestätigte Gameplay-Regel. |
 
+Hinweis zum Begriff „Prototyp“ (D-062): Aussagen über „den Prototyp“ in den Fachdokumenten beschreiben den ersten Gameplay-Prototyp. Seit D-062 ist der erweiterte Gesamtprototyp Entwicklungsziel. Bestätigte Regeln gelten weiter, bis eine Funktionsentscheidung sie ausdrücklich ersetzt. Die Regeln neuer Funktionen sind OPEN, bis sie entschieden und im Entscheidungsprotokoll eingetragen sind.
+
 Jede Aussage mit Spielbezug trägt einen dieser Status. Aussagen ohne Status sind reine Erläuterungen ohne Anforderungscharakter.
 
 ## Dokumentübersicht

@@ -55,6 +55,9 @@ Testversionen gibt es nur für Branches `feature/<name>`. Eine Übersicht aller 
 
 ## Schutz des akzeptierten Standes
 
+- Das Veröffentlichungsskript wird immer aus `main` gelesen, nie aus dem zu veröffentlichenden Branch. Ein Feature-Branch kann die Schutzregeln also nicht durch Ändern des Skripts umgehen. Er liefert nur die gebauten Dateien.
+- Berechtigungen: Der Prüf-Job (führt Code des Branches aus) hat nur Leserechte. Nur die Jobs `publish`, `cleanup` und `prune` bekommen `contents: write`. Der Zugang zum Schreiben ist das Workflow-Token (`github.token`), das GitHub in Logs automatisch maskiert. Es gibt kein eigenes Geheimnis.
+- Grenze dieses Schutzes: Ein Token mit Schreibrecht könnte technisch auch andere Branches ändern. Das Skript schreibt nur nach `gh-pages`. Eine Absicherung durch einen Branch-Schutz für `main` ist nicht eingerichtet (nicht gefordert).
 - Der Build einer Testversion verwendet den Pfad `/frostbound/preview/<name>/`. Seine Dateien können nicht auf die Wurzel zeigen (geprüft: alle Verweise im Build liegen unter dem Pfad, der Zugriff auf die Wurzel liefert nichts).
 - Das Skript prüft vor jedem Commit, welche Dateien sich ändern. Eine Testversion darf nur Pfade unter `preview/` ändern, der akzeptierte Stand nie etwas unter `preview/`. Bei einer Verletzung bricht das Skript ab, es wird nichts veröffentlicht.
 - Ein Push auf `main` ersetzt nur die Wurzel und lässt `preview/` unverändert. Ein Push auf einen Feature-Branch ersetzt nur den eigenen Ordner.
@@ -94,12 +97,25 @@ Die Pages-Quelle ist aktuell „GitHub Actions“. Der gh-pages-Ansatz verlangt 
 3. `main` in `gh-pages` veröffentlichen: Workflow „Build, test and publish“, Aktion `publish-main`. Prüfen, dass `gh-pages` die erwarteten Dateien enthält.
 4. Dummy-Test: einen Branch `feature/stage0-dummy` pushen und prüfen, dass die Testversion in `gh-pages` unter `preview/stage0-dummy/` erscheint und die Wurzel unverändert bleibt.
 5. Pages-Quelle umstellen (Einstellungen → Pages → Branch `gh-pages`, Ordner `/`, oder `gh api -X PUT repos/SerPlanet/frostbound/pages -f build_type=legacy -f "source[branch]=gh-pages" -f "source[path]=/"`). Dann die URLs des akzeptierten Standes und der Dummy-Testversion im Browser prüfen.
-6. Rückweg bei Problemen: Quelle wieder auf `build_type=workflow` setzen, `gh variable delete PAGES_MODE`, `pages.yml` manuell starten.
+6. Rückweg bei Problemen, siehe Abschnitt „Rückweg“.
+
+## Rückweg zu „GitHub Actions“ (noch nicht durchgeführt, ebenfalls nur mit Zustimmung)
+
+Ziel: Der akzeptierte Stand läuft wieder über `pages.yml`, wie bis Stufe 0. Reihenfolge ist wichtig:
+
+1. Pages-Quelle zurück auf „GitHub Actions“ stellen (Einstellungen → Pages → Source: GitHub Actions, oder `gh api -X PUT repos/SerPlanet/frostbound/pages -f build_type=workflow`).
+2. Repository-Variable entfernen: `gh variable delete PAGES_MODE`. Erst dann arbeitet `pages.yml` wieder (solange die Variable `branch` ist, werden beide Jobs übersprungen).
+3. `pages.yml` manuell starten: `gh workflow run pages.yml --ref main` (oder jeder Push auf `main`). Der Workflow baut `main` und veröffentlicht es über „GitHub Actions“. Damit ist die bisherige Live-Seite aus dem aktuellen `main` wiederhergestellt.
+4. Prüfen: `https://serplanet.github.io/frostbound/` lädt, und `gh api repos/SerPlanet/frostbound/pages --jq .build_type` ergibt `workflow`.
+5. Aufräumen (optional): Der Branch `gh-pages` kann stehen bleiben (wird nicht ausgeliefert) oder mit `git push origin --delete gh-pages` entfernt werden. `publish.yml` prüft weiter, veröffentlicht aber nichts, solange `PAGES_MODE` nicht `branch` ist.
+
+Hinweise: Die zuvor per „GitHub Actions“ ausgelieferte Version wird beim Wechsel zu „Branch“ ersetzt und nicht automatisch wiederhergestellt, deshalb ist Schritt 3 nötig. Die Live-Seite zeigt zwischen Schritt 1 und Schritt 3 kurz den letzten Stand von `gh-pages` oder nichts. Wenn der Rückweg wegen einer GitHub-Störung hängt, hilft ein erneuter Lauf von `pages.yml`.
 
 ## Risiken und offene technische Fragen
 
 - **Nicht auf GitHub erprobt:** Das Veröffentlichungsskript, der Build mit Unterpfad und die Workflow-Syntax sind lokal geprüft. Noch nicht beobachtet: ob GitHub nach einem Push in `gh-pages` mit dem Workflow-Token zuverlässig die Seite neu baut, die Wartezeit bis zur Sichtbarkeit und das Verhalten des `delete`-Ereignisses. Das zeigt erst der Dummy-Test (Schritt 4 und 5).
 - **Öffentlichkeit:** Das Repository ist öffentlich, also auch alle Testversionen.
+- **Veröffentlichung hängt von `main` ab:** Das Skript und die Workflow-Teile `cleanup` und `prune` kommen aus `main`. Vor der Integration der Stufe 0 darf `PAGES_MODE=branch` deshalb nicht gesetzt werden.
 - **Pages-Störungen:** Bei einer Störung von GitHub Pages sind auch Testversionen betroffen. Ausweichen: Build-Artefakt aus dem Workflow-Lauf herunterladen und lokal mit `npm run preview` starten.
 - **Pages-Grenzen:** GitHub Pages hat Größen- und Bau-Grenzen. Bei vielen gleichzeitigen Testversionen mit Grafiken könnte die Seite groß werden. Abhilfe: Branches nach der Abnahme löschen, `prune` nutzen.
 - **Browser-Speicher:** Alle Testversionen und der akzeptierte Stand teilen sich dieselbe Domain. Ein späterer Spielstand im Browser-Speicher (`localStorage`) muss deshalb einen Schlüssel mit Version oder Branch verwenden, sonst überschreiben sich Stände.

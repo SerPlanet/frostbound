@@ -22,8 +22,10 @@ on:
         options: [publish-main, prune]
         default: publish-main
 
+# Mindestrechte: Die Prüfung (Build, Selbsttest) führt Code des Branches aus und darf nur lesen.
+# Schreibrechte haben ausschließlich die Jobs, die in gh-pages veröffentlichen (publish, cleanup, prune).
 permissions:
-  contents: write
+  contents: read
 
 env:
   PAGES_BRANCH: gh-pages
@@ -76,11 +78,17 @@ jobs:
     needs: check
     if: vars.PAGES_MODE == 'branch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     concurrency:
       group: publish-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      # Das Veröffentlichungsskript (mit den Schutzregeln) kommt immer aus dem Standardbranch main,
+      # nie aus dem zu veröffentlichenden Branch. Nur die gebauten Dateien (Artefakt) stammen vom Branch.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -100,11 +108,15 @@ jobs:
     # Gelöschter Feature-Branch -> Testversion entfernen. Dieses Ereignis wird immer mit dem Workflow aus main ausgeführt.
     if: vars.PAGES_MODE == 'branch' && github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     concurrency:
       group: publish-cleanup
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
       - name: Testversion entfernen
         env:
           PAGES_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
@@ -114,11 +126,15 @@ jobs:
   prune:
     if: vars.PAGES_MODE == 'branch' && github.event_name == 'workflow_dispatch' && inputs.action == 'prune'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     concurrency:
       group: publish-cleanup
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
       - name: Verwaiste Testversionen entfernen
         env:
           PAGES_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git

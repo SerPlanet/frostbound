@@ -18,11 +18,11 @@ Nichts davon blockiert den Start der Prototyp-Implementierung. Für alle Zahlenw
 | Q-004 | Endgültige Gegnerwerte: Lebenspunkte und Tempo (Schaden ist entschieden: 10, D-052) | TESTWERT | enemies, combat |
 | Q-005 | Endgültige Reichweite des Spielerangriffs, Schaden und Feuerrate beider Angriffsquellen | TESTWERT | combat |
 | Q-018 | Endgültiger Zeitpunkt der großen Welle sowie Zeitpunkt und Länge der Pausen | TESTWERT | difficulty |
-| Q-010 | Gibt es im Prototyp etwas zu bauen? Bauen durch Nähe ist bestätigt (D-020). Da zusätzliche Waggons und Geschütze nicht zum Prototyp gehören (D-059), geht die Spezifikation davon aus: nein. Bitte bestätigen | OPEN (nicht blockierend) | player, train-and-defense |
+| Q-010 | Gibt es im Prototyp etwas zu bauen? Bauen durch Nähe ist bestätigt (D-020). Da zusätzliche Waggons und Geschütze nicht zum ersten Gameplay-Prototyp gehören (D-059; seit D-062 Teil des erweiterten Gesamtprototyps, Regeln OPEN), geht die Spezifikation davon aus: nein. Bitte bestätigen | OPEN (nicht blockierend) | player, train-and-defense |
 | Q-006 | Drops und Einsammeln im Prototyp (optional, niedrige Priorität, D-046). Endgültige drei Ressourcen des Vollspiels | OPEN (nicht blockierend) | resources |
 | Q-030 | Beziehung der Begriffe „Runde“ und „Spieltag“ | OPEN (nicht blockierend) | glossary |
 | Q-032 | Audio im Prototyp (weder bestätigt noch ausgeschlossen, im Plan nicht enthalten) | OPEN (nicht blockierend) | scope |
-| Q-012 | Upgrade- und Progressionssysteme des Vollspiels (nicht Prototyp, D-059) | Langzeit | resources, overview |
+| Q-012 | Upgrade- und Progressionssysteme des Vollspiels (nicht erster Gameplay-Prototyp, D-059; einzelne Ausschnitte seit D-062 im erweiterten Gesamtprototyp) | Langzeit | resources, overview |
 | Q-016 | Funktionsweise, Verteilung und Inhalte der Adventskalendertürchen | Langzeit | overview |
 | Q-033 | Wiederaufbau zerstörter Zugteile (Dauer, Art, Anzeige, Verhältnis zur normalen Reparatur, Verhalten des Geschützes). Nächster Gameplay-Test, Stufe 1 (D-062) | OPEN (Stufe 1) | train-and-defense, repair-system |
 | Q-034 | Quelle und Stilrichtung der Grafik für die tatsächliche Spieloptik (Stufe 2, D-062) | OPEN (Stufe 2) | scope, testing-and-greybox |

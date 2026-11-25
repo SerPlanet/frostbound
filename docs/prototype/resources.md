@@ -7,12 +7,12 @@
 ## Prototyp
 
 - CONFIRMED: Reparaturen kosten keine Ressourcen (D-043).
-- CONFIRMED: Progressionsmechaniken (Belohnungen, Freischaltungen, Upgrades, Ressourcen als Spielsystem) gehören nicht zum ersten Prototyp (D-046).
+- CONFIRMED: Progressionsmechaniken (Belohnungen, Freischaltungen, Upgrades, Ressourcen als Spielsystem) gehören nicht zum ersten Gameplay-Prototyp (D-046). Seit D-062 gehören Belohnungen und Upgrades zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN (Q-006, Q-012).
 - CONFIRMED (optional): Gegnerdrops und Einsammeln können optional umgesetzt werden, haben niedrige Priorität und dürfen den Kernprototyp nicht verzögern (D-046).
 - OPEN: Ob Drops und Einsammeln im Prototyp tatsächlich umgesetzt werden und wie sie funktionieren (Q-006).
 - OPEN: Baukosten. Im Prototyp gibt es nichts zu bauen (Q-010, zur Bestätigung).
 
-## Vollspiel (nicht Teil des Prototyps)
+## Vollspiel (nicht Teil des ersten Gameplay-Prototyps, einzelne Ausschnitte seit D-062 im erweiterten Gesamtprototyp, Regeln OPEN)
 
 Die folgenden Punkte sind ausschließlich Langzeitplanung.
 
