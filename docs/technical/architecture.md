@@ -99,6 +99,8 @@ frostbound/
   tsconfig.json
   vite.config.ts              base: "/frostbound/"
   .github/workflows/pages.yml angepasst: npm ci, npm run build, dist veröffentlichen
+  .github/workflows/ci.yml, publish.yml   CI und Testversionen (Stufe 0, TECH-24)
+  scripts/publish-pages.sh                Veröffentlichung nach gh-pages (TECH-24)
   src/
     main.ts                   Modus aus URL, startet Phaser oder Selbsttest
     config.ts                 alle Werte (bestätigt, TECH, Testwerte getrennt)
@@ -179,12 +181,14 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 | TECH-14 | Fester Zeitschritt 1000/60 ms, feste Schrittreihenfolge (Abschnitt 4). |
 | TECH-15 | Zufall als injizierbare Funktion, kein Seed-System. |
 | TECH-16 | Ereignisliste je Schritt für Darstellung und Statistik. |
-| TECH-17 | Deployment: `vite build`, Veröffentlichung von `dist/` über den bestehenden GitHub-Pages-Workflow (anzupassen, siehe Implementierungsplan). |
+| TECH-17 | Deployment: `vite build`, Veröffentlichung von `dist/` über den bestehenden GitHub-Pages-Workflow `pages.yml` (GitHub Actions). Seit Stufe 0 des erweiterten Prototyps zusätzlich vorbereitet: Veröffentlichung über den Branch `gh-pages` mit Testversionen, siehe TECH-24 und [deployment-and-previews.md](deployment-and-previews.md). Die Umstellung der Pages-Quelle ist noch nicht erfolgt. |
 | TECH-18 | Angriffsablauf je Quelle (Schritt 7): Die Abkühlung zählt pro Schritt herunter. Ist sie ≤ 0 (mit 1e-6 ms Rundungstoleranz) und gibt es ein gültiges Ziel, erfolgt der Schuss und die Abkühlung wächst um das Intervall (der Rest wird mitgeführt, die mittlere Feuerrate ist bei jeder Schrittgröße gleich). Der erste Schuss fällt sofort, wenn ein Ziel vorhanden ist. Ohne Ziel bleibt die Quelle bereit (Abkühlung 0). Ein funktionsloses Geschütz hat Abkühlung 0 und ist nach der Reparatur sofort bereit. |
 | TECH-19 | Gültiges Ziel für beide Quellen: lebender Gegner im sichtbaren Spielfeld (y ≥ 0). Der Spielerangriff nutzt zusätzlich die Reichweite (≤ 90 LE, Bezugspunkt Spielerposition). Innerhalb eines Schritts schlägt zuerst der Spieler zu, dann das Geschütz. Beide dürfen denselben Gegner treffen, der Kill geht an die Quelle des tödlichen Treffers. Bei gleichem Abstand gewinnt die kleinere Gegner-ID. |
 | TECH-20 | Schrittreihenfolge: Kontakt und Zugschaden (Schritt 4) kommen vor den Angriffen (Schritt 5). Ein Gegner, der in einem Schritt sein Ziel erreicht, hat seinen Schaden angerichtet, bevor er beschossen wird. Trefferlinien bleiben 150 ms sichtbar (reine Anzeige). |
 | TECH-21 | Reparatur (Schritt 8): Je Zugteil ein Fortschrittszähler in ms. Er wächst nur, solange der Spieler in der Zone des reparierbaren Teils steht (Position im Rechteck, Rand inklusive). Alle 5000 ms (mit 1e-6 ms Rundungstoleranz) kommen 5 HP hinzu, auch mehrere Schritte bei einem großen Zeitschritt. Beim Abschluss (HP = Maximum) endet der Status „zerstört“, der Zähler wird 0, und nur bei einem zuvor zerstörten Wagon wird das Geschütz auf 20/20 gesetzt und aktiviert (D-055). `world.activeRepair` nennt das in diesem Schritt reparierte Teil und dient der Darstellung (hervorgehobene Zone, Fortschrittsleiste). Die aktive Reparaturzeit wird je Teil in `stats.repairMsByPart` erfasst. |
 | TECH-22 | Spielende (Schritt 9): `checkDefeat` läuft direkt nach Kontakt und Zugschaden (nach Schritt 4). Fällt das letzte intakte Teil, endet die Runde sofort, und in diesem Schritt folgen keine Angriffe oder Reparaturen mehr. Am Schrittende prüft `evaluateRoundEnd` zuerst die Niederlage, dann den Sieg. Der Statuswechsel setzt `status`, `stats.result` und genau ein Ereignis `roundEnded`. Danach ändert `stepWorld` nichts mehr. Die Szene zeigt nach dem Spielende 1,5 s lang das eingefrorene Spielfeld mit Banner „SIEG“ bzw. „NIEDERLAGE“ und wechselt dann einmalig zum Ergebnisbildschirm. Die Spieldauer ist die Simulationszeit `world.timeMs` (nur Anzeige). Ein Neustart ist der Weg Ergebnis → Start → Schwierigkeit wählen, jede Runde beginnt mit `createWorld` (D-047). |
+| TECH-23 | Kennzeichnung von Testversionen (Stufe 0): `src/view/buildInfo.ts` zeigt als DOM-Overlay (ohne Phaser, ohne Einfluss auf Spiel und Szenen) "TESTVERSION · Branch · Commit", wenn der Build `VITE_BUILD_KIND=preview` erhält. Branch und Commit kommen aus `VITE_BUILD_BRANCH` und `VITE_BUILD_COMMIT` (Umgebungsvariablen beim Build). `main.ts` ruft `showBuildInfo()` in jedem Modus auf. |
+| TECH-24 | Testversionen und Veröffentlichung (Stufe 0): Der Branch `gh-pages` enthält nur Build-Dateien (immer ein Commit). `main` schreibt die Wurzel, `feature/<name>` schreibt `preview/<name>/`. Der Ordnername entsteht aus dem Branch-Namen (kleingeschrieben, nur a-z, 0-9 und `-`, bei Änderung mit 6-stelligem Hash). Build mit `--base=/<repo>/preview/<name>/`. Schutzregeln, Parallelität, Aufräumen und Umstellungsablauf: [deployment-and-previews.md](deployment-and-previews.md). Die Veröffentlichung ist über die Repository-Variable `PAGES_MODE=branch` ein- und ausschaltbar. |
 
 ## 10. Anforderungen
 
@@ -237,7 +241,7 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 - **Problemstellung:** Überdimensionierung verzögert den Prototyp.
 - **Ziel:** So wenig Struktur wie nötig.
 - **Gewünschtes Verhalten:** Nur die Module aus Abschnitt 7. Keine Plug-in-Systeme, keine allgemeinen Entity-Frameworks, keine Vorbereitung für zusätzliche Waggons, Geschütze, Gegnertypen oder Progression. Spätere Erweiterungen sollen nicht unmöglich sein, werden aber nicht vorbereitet.
-- **Akzeptanzkriterien:** (1) Abhängigkeiten nur `phaser`, `typescript`, `vite`. (2) Keine Mechanismen für nicht im Prototyp enthaltene Inhalte. (3) Keine Entwickler-Dashboards.
+- **Akzeptanzkriterien:** (1) Abhängigkeiten nur `phaser`, `typescript`, `vite`. (2) Keine Mechanismen für nicht im ersten Gameplay-Prototyp enthaltene Inhalte (für Funktionen des erweiterten Gesamtprototyps, D-062, gilt: erst nach der jeweiligen Funktionsentscheidung und Abstimmung nach D-033 b). (3) Keine Entwickler-Dashboards.
 - **Testfälle:** Review von `package.json` und der Dateiliste.
 - **Abhängigkeiten:** –
 - **Entscheidungsstatus:** CONFIRMED (D-059, D-060).

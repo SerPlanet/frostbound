@@ -6,6 +6,8 @@
 
 ## Rahmen
 
+- Stand: Die Schritte 1 bis 9 dieses Plans sind umgesetzt. Der weitere Weg (erweiterter Gesamtprototyp, Stufen 0 bis 3, D-062) steht in [../prototype/scope.md](../prototype/scope.md) und [../project/process.md](../project/process.md). Für Funktionen des erweiterten Gesamtprototyps gilt die Branch- und Freigaberegel D-063 statt der unten genannten Übernahme nach `main`.
+
 - Reihenfolge nach technischen Abhängigkeiten: zuerst die Logik und ihre Prüfungen, dann die Darstellung, die jeweils auf der Logik aufbaut.
 - Jeder Schritt endet mit grünem Selbsttest (`node src/tests/selftest.ts`), soweit er Logik berührt, und mit einer kurzen manuellen Prüfung, soweit er Darstellung berührt.
 - Normale, geprüfte Änderungen dürfen nach `main` (D-033). Größere Architekturänderungen und Änderungen an bestätigten Spielregeln brauchen vorher Freigabe.

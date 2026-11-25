@@ -1,0 +1,141 @@
+name: Build, test and publish
+
+# Stufe 0 des erweiterten Prototyps (D-062, D-063). Beschreibung: docs/technical/deployment-and-previews.md
+#
+# - push auf main            -> prüfen; danach akzeptierten Stand in die Wurzel von gh-pages schreiben
+# - push auf feature/**      -> prüfen; danach Testversion unter preview/<name>/ schreiben
+# - Branch feature/** gelöscht -> preview/<name>/ entfernen (Workflow läuft für "delete" immer aus main)
+# - manuell                  -> main neu veröffentlichen oder verwaiste Testversionen aufräumen
+#
+# WICHTIG: Das Veröffentlichen in gh-pages ist ausgeschaltet, solange die Repository-Variable PAGES_MODE
+# nicht auf "branch" steht. Bis dahin läuft nur die Prüfung (Build und Selbsttest) und es wird nichts veröffentlicht.
+# pages.yml (bisheriges Deployment) arbeitet in diesem Zustand unverändert weiter.
+on:
+  push:
+    branches: [main, 'feature/**']
+  delete:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "publish-main = main neu veröffentlichen, prune = verwaiste Testversionen entfernen"
+        type: choice
+        options: [publish-main, prune]
+        default: publish-main
+
+# Mindestrechte: Die Prüfung (Build, Selbsttest) führt Code des Branches aus und darf nur lesen.
+# Schreibrechte haben ausschließlich die Jobs, die in gh-pages veröffentlichen (publish, cleanup, prune).
+permissions:
+  contents: read
+
+env:
+  PAGES_BRANCH: gh-pages
+
+jobs:
+  check:
+    # Prüfung für Pushes und für das manuelle Neuveröffentlichen von main
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.action == 'publish-main' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    concurrency:
+      group: check-${{ github.ref }}
+      cancel-in-progress: true
+    outputs:
+      kind: ${{ steps.target.outputs.kind }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - id: target
+        name: Zielpfad bestimmen
+        run: |
+          repo="${GITHUB_REPOSITORY#*/}"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "kind=main" >> "$GITHUB_OUTPUT"
+            echo "base=/${repo}/" >> "$GITHUB_OUTPUT"
+          else
+            slug="$(bash scripts/publish-pages.sh slug "$GITHUB_REF_NAME")"
+            echo "kind=preview" >> "$GITHUB_OUTPUT"
+            echo "base=/${repo}/preview/${slug}/" >> "$GITHUB_OUTPUT"
+          fi
+      - run: npm ci
+      - name: Build
+        env:
+          VITE_BUILD_KIND: ${{ steps.target.outputs.kind }}
+          VITE_BUILD_BRANCH: ${{ github.ref_name }}
+        run: |
+          export VITE_BUILD_COMMIT="${GITHUB_SHA::7}"
+          npm run build -- --base="${{ steps.target.outputs.base }}"
+      - name: Selbsttest
+        run: node src/tests/selftest.ts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 3
+
+  publish:
+    needs: check
+    if: vars.PAGES_MODE == 'branch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      # Das Veröffentlichungsskript (mit den Schutzregeln) kommt immer aus dem Standardbranch main,
+      # nie aus dem zu veröffentlichenden Branch. Nur die gebauten Dateien (Artefakt) stammen vom Branch.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+      - name: In gh-pages veröffentlichen
+        env:
+          PAGES_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          KIND: ${{ needs.check.outputs.kind }}
+        run: |
+          if [ "$KIND" = "main" ]; then
+            bash scripts/publish-pages.sh main dist "${GITHUB_SHA::7}"
+          else
+            bash scripts/publish-pages.sh preview dist "$GITHUB_REF_NAME" "${GITHUB_SHA::7}"
+          fi
+
+  cleanup:
+    # Gelöschter Feature-Branch -> Testversion entfernen. Dieses Ereignis wird immer mit dem Workflow aus main ausgeführt.
+    if: vars.PAGES_MODE == 'branch' && github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'feature/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-cleanup
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Testversion entfernen
+        env:
+          PAGES_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+          DELETED_BRANCH: ${{ github.event.ref }}
+        run: bash scripts/publish-pages.sh remove "$DELETED_BRANCH"
+
+  prune:
+    if: vars.PAGES_MODE == 'branch' && github.event_name == 'workflow_dispatch' && inputs.action == 'prune'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: publish-cleanup
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - name: Verwaiste Testversionen entfernen
+        env:
+          PAGES_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+        run: bash scripts/publish-pages.sh prune

@@ -4,7 +4,12 @@
 //   ?mode=selftest   Selbsttest der Spiellogik im Browser (ohne Phaser)
 // Die logische Spielfeldgröße 1280 x 720 (16:9) entspricht TECH-01 in docs/technical/architecture.md.
 
+import { showBuildInfo } from "./view/buildInfo.ts";
+
 const mode = new URLSearchParams(window.location.search).get("mode");
+
+// Bei Testversionen (Preview) zeigt ein Hinweis Branch und Commit an (D-063).
+showBuildInfo();
 
 async function showSelfTest(): Promise<void> {
   // Verwendet dieselbe Prüfdatei wie der Node-Aufruf, keine zweite Implementierung.

@@ -6,6 +6,8 @@
 
 ## Ziel
 
+**Erweiterung (CONFIRMED: D-062):** Entwicklungsziel ist inzwischen der erweiterte Gesamtprototyp, siehe Abschnitt „Erweiterter Gesamtprototyp“ unten. Dieses Dokument beschreibt zunächst den ersten Gameplay-Prototyp (Stufe 1 der Entwicklung, Schritte 1 bis 9 des Implementierungsplans, umgesetzt und in Balance-Teststände 1 bis 6 weiterentwickelt).
+
 Ein schnell spielbarer Gameplay-Prototyp, der ausschließlich dazu dient, die grundlegenden Spielmechaniken auszuprobieren und vom Nutzer beurteilen zu lassen. Er ist kein fertiges Spiel und kein verkleinertes Abbild der Vollversion (CONFIRMED: D-059, D-032). Er verwendet Greybox-Platzhalter (D-006, D-024, D-058).
 
 Ob der Prototyp „Spaß macht“ oder „spannend“ ist, ist eine **menschliche Bewertungsaufgabe** des Projektverantwortlichen und wird nie von einem Agenten als erfüllt erklärt.
@@ -30,7 +32,34 @@ Ob der Prototyp „Spaß macht“ oder „spannend“ ist, ist eine **menschlich
 
 - Gegnerdrops und Einsammeln, falls sie den Kernprototyp nicht verzögern (D-046). Im Implementierungsplan nicht enthalten.
 
+## Erweiterter Gesamtprototyp (CONFIRMED: D-062)
+
+Der erweiterte Gesamtprototyp enthält zusätzlich zum Gameplay-Prototyp folgende Bereiche. **Das ist nur eine Umfangsaussage.** Die Regeln der einzelnen Funktionen sind nicht festgelegt und gelten als **OPEN**, bis der Projektverantwortliche sie entscheidet und als eigene Entscheidung im [Entscheidungsprotokoll](../project/decision-log.md) steht.
+
+- Visuelle Gestaltung und tatsächliche Spieloptik (Zug, Geschütze, Gegner, Umgebung, Spielerfigur, HUD, Reparaturzonen, Start- und Ergebnisbildschirm, Menüs, Interaktionsanzeigen). Die Greybox bleibt als technischer Vergleichsmodus erhalten.
+- Wiederaufbau zerstörter Zugteile.
+- Adventstüren und Tageswechsel.
+- Belohnungen und Upgrades.
+- Neue Waggons und Geschützplatzierung.
+- Einzelne spielbare Testmodi für neue Funktionen.
+- Ein zusammenhängender Mini-Durchlauf mit mehreren Tagen.
+
+Das vollständige 24-Tage-Spiel wird erst nach Abschluss und Akzeptanz des erweiterten Gesamtprototyps geplant (D-032 Schritt 6). Bisher bestätigte Regeln bleiben bestehen, sofern sie nicht ausdrücklich geändert werden.
+
+Vorgesehene Stufen (CONFIRMED als Plan, D-062; Inhalte und Reihenfolge von Stufe 3 sind OPEN):
+
+| Stufe | Inhalt |
+|---|---|
+| 0 | Entscheidung D-062, Branch- und Testversions-Infrastruktur, Dokumentation |
+| 1 | Wiederaufbau zerstörter Zugteile (OPEN: Regeln, Q-033) |
+| 2 | Visuelles Konzept und Umsetzung (OPEN: Grafikquelle und Stil, Q-034) |
+| 3 | Zusatzfunktionen, jeweils eigener Branch und Testmodus: Tageswechsel, Adventstür, Belohnungen, Upgrades, Waggons, Geschütze (OPEN: Q-012, Q-016, Q-025, Q-035) |
+
+Entwicklungsstruktur und Freigabe: [../project/process.md](../project/process.md). Testversionen: [../technical/deployment-and-previews.md](../technical/deployment-and-previews.md).
+
 ## Nicht im Umfang (CONFIRMED, D-059)
+
+Hinweis (D-062): Diese Liste gilt für den **ersten Gameplay-Prototyp**. Soweit ein Punkt zum erweiterten Gesamtprototyp gehört (siehe oben: finale Grafik und Menüs, Belohnungen, Upgrades, zusätzliche Waggons und Geschütze, Adventskalender-Ansätze), ist er dafür nicht mehr ausgeschlossen. Seine Regeln bleiben OPEN, bis sie entschieden sind. Alle übrigen Punkte bleiben ausgeschlossen.
 
 - 24-Tage-Adventskalender (D-027).
 - Progression, Ressourcenwirtschaft, Upgrades, Belohnungssysteme.
@@ -51,11 +80,11 @@ Die Architektur darf Erweiterungen nicht unmöglich machen, bereitet sie aber ni
 
 - Audio ist weder bestätigt noch ausgeschlossen (Q-032). Es ist nicht im Implementierungsplan.
 - Bauen: durch Nähe bestätigt (D-020). Es gibt im Prototyp nichts zu bauen, siehe Q-010 (zur Bestätigung).
-- Upgrade- und Progressionssysteme des Vollspiels (Q-012) sind offen. Sie sind lediglich nicht Teil des Prototyps.
+- Upgrade- und Progressionssysteme des Vollspiels (Q-012) sind offen. Sie waren nicht Teil des ersten Gameplay-Prototyps. Einzelne Ausschnitte gehören seit D-062 zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN.
 
 ## Prototyp und Vollspiel
 
-Langzeitinhalte stehen nur in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie erzeugen keine Prototyp-Anforderungen.
+Langzeitinhalte stehen nur in [../project/overview.md](../project/overview.md) und im Abschnitt „Vollspiel“ von [resources.md](resources.md). Sie erzeugen keine Anforderungen an den ersten Gameplay-Prototyp. Für den erweiterten Gesamtprototyp (D-062) entstehen Anforderungen erst mit der jeweiligen Funktionsentscheidung.
 
 ## Erfolg
 

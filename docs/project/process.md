@@ -15,7 +15,7 @@ Der Statuswortschatz CONFIRMED, PROPOSED, OPEN gilt für alle Designentscheidung
 5. Neue offene Frage: Eintrag in [open-questions.md](../open-questions.md) mit Q-ID und im betroffenen Fachdokument als OPEN. Wird sie entschieden, wird der Q-Eintrag auf „entschieden“ gesetzt und auf die D-ID verwiesen.
 6. Keine Widersprüche zwischen Dokumenten. Bei Zweifel gilt das Entscheidungsprotokoll.
 7. Zahlenwerte nur, wenn CONFIRMED. Sonst als OPEN führen.
-8. Prototyp und Vollspiel bleiben getrennt: Vollspielinhalte (Adventskalender, drei Ressourcen, Upgrades, Progression) stehen nur in [overview.md](overview.md) und im Abschnitt „Vollspiel“ von [resources.md](../prototype/resources.md) und erzeugen keine Prototyp-Anforderungen.
+8. Prototyp und Vollspiel bleiben getrennt (D-062: der erweiterte Gesamtprototyp enthält einzelne Funktionen davon, deren Regeln OPEN sind, bis sie entschieden und eingetragen sind): Vollspielinhalte (Adventskalender, drei Ressourcen, Upgrades, Progression) stehen nur in [overview.md](overview.md) und im Abschnitt „Vollspiel“ von [resources.md](../prototype/resources.md) und erzeugen keine Prototyp-Anforderungen.
 9. Möglichst wenige Dokumente. Neue Dokumente nur bei klar eigenständigem Zweck, und sie werden in [README.md](../README.md) und [agent-guide.md](../agent-guide.md) eingetragen.
 
 ## Standard für Anforderungen und Erfolgskriterien (CONFIRMED: D-029)
@@ -68,12 +68,14 @@ Ein Agent berichtet höchstens „technisch abgeschlossen“ und „erfolgreich 
 Die folgende Reihenfolge ist verbindlich:
 
 1. GitHub-Repository einrichten. (erledigt)
-2. Dokumentation erstellen und vervollständigen. (aktuell)
-3. Prototyp auf Grundlage der Dokumentation entwickeln.
+2. Dokumentation erstellen und vervollständigen. (erledigt)
+3. Prototyp auf Grundlage der Dokumentation entwickeln. (aktuell: erweiterter Gesamtprototyp, D-062)
 4. Nutzerfeedback einholen.
 5. Prototyp anhand des Feedbacks verbessern. Die Schritte 4 und 5 werden wiederholt, bis der Projektverantwortliche zufrieden ist.
 6. Vollständiges Spiel durchplanen und spezifizieren.
 7. Vollständige Umsetzung anhand der finalen Dokumentation.
+
+Ergänzung (D-062): Der erweiterte Gesamtprototyp liegt innerhalb der Schritte 3 bis 5. Schritt 6 (vollständiges Spiel planen, 24 Tage) beginnt erst, wenn der Projektverantwortliche den erweiterten Gesamtprototyp akzeptiert hat.
 
 Konsequenzen für Agenten:
 
@@ -89,5 +91,37 @@ Standardbranch ist `main`.
 - Größere Architekturänderungen werden **vor der Umsetzung** mit dem Projektverantwortlichen abgestimmt.
 - Änderungen an bestätigten Spielregeln (CONFIRMED-Einträge) benötigen **vorherige Freigabe**.
 - Experimentelle Arbeiten bleiben auf separaten Branches, bis sie ausreichend geprüft wurden.
-- Commits werden nachvollziehbar beschrieben. Weitere Git-Regeln sind nicht festgelegt.
+- Commits werden nachvollziehbar beschrieben.
 - Zugangsdaten und Tokens gehören nie ins Repository.
+- Für den erweiterten Gesamtprototyp gilt zusätzlich und vorrangig der folgende Abschnitt (D-063). Die Möglichkeit, normale Änderungen selbstständig in `main` zu übernehmen, gilt für Funktionen des erweiterten Gesamtprototyps nicht mehr.
+
+## Entwicklungsstruktur des erweiterten Gesamtprototyps (CONFIRMED: D-062, D-063)
+
+### Branches
+
+| Branch | Zweck |
+|---|---|
+| `main` | Stabiler, vom Projektverantwortlichen akzeptierter Spielstand. Wird live unter `https://serplanet.github.io/frostbound/` gezeigt. |
+| `feature/<name>` | Eine neue Funktion (z. B. `feature/rebuild`). Wird immer von aktuellem `main` abgezweigt. Jeder Push veröffentlicht eine Testversion unter `/frostbound/preview/<name>/`. |
+| `chore/<name>` | Vorbereitung und Technik ohne Spielfunktion (z. B. Infrastruktur, Dokumentation). Wird geprüft (CI), aber nicht veröffentlicht. |
+| `gh-pages` | Nur veröffentlichte Build-Dateien, kein Quellcode. Wird ausschließlich von den Workflows geschrieben. |
+
+### Ablauf einer Funktion
+
+1. Der Agent entwickelt die Funktion auf `feature/<name>`, ergänzt Selbsttests und Dokumentation und prüft die Akzeptanzkriterien.
+2. Bei jedem Push prüft die CI (`npm ci`, `npm run build`, `node src/tests/selftest.ts`). Nur bei Erfolg wird die Testversion veröffentlicht.
+3. Der Agent berichtet: Testversion-URL, was geprüft wurde, was nicht. Er erklärt die Funktion höchstens als „technisch abgeschlossen“ und „erfolgreich getestet“ (Definition of Done).
+4. Der Projektverantwortliche spielt die Testversion und gibt Feedback. Der Agent arbeitet es auf demselben Branch ein, die Testversion aktualisiert sich.
+5. Erst nach ausdrücklicher Freigabe („akzeptiert“) durch den Projektverantwortlichen wird der Branch in `main` integriert (Pull Request, anschließend Branch löschen, die Testversion wird entfernt).
+6. Nach der Integration wird die Funktion im Entscheidungsprotokoll und im Fachdokument festgehalten.
+
+### Regeln
+
+- Keine unfertigen Funktionen direkt auf `main`.
+- Keine Integration ohne ausdrückliche Freigabe des Projektverantwortlichen.
+- Kein Agent erklärt eine Funktion für akzeptiert, die der Projektverantwortliche noch nicht getestet hat. „Inhaltlich akzeptiert“ erklärt nur der Projektverantwortliche.
+- Jede größere Funktion ist separat testbar (eigene Testversion, nach Möglichkeit ein eigener Testmodus `?mode=…`, siehe [testing-and-greybox.md](../technical/testing-and-greybox.md)).
+- Unabhängige Aufgaben dürfen parallel auf getrennten Branches bearbeitet werden, wenn keine Konflikte entstehen. Berühren zwei Aufgaben dieselben Dateien (z. B. `config.ts`, `world.ts`, `selftest.ts`), wird die Reihenfolge vorher abgestimmt. Ein Branch holt `main` regelmäßig nach, bevor er zur Abnahme vorgelegt wird.
+- Änderungen an bestätigten Spielregeln (CONFIRMED) und größere Architekturänderungen brauchen weiterhin vorab die Freigabe (D-033 b, c). Das betrifft insbesondere den Umbau des Zuges auf beliebig viele Teile.
+- Die Live-Einstellung von GitHub Pages (Quelle, Domain) wird nur nach ausdrücklicher Zustimmung geändert.
+- Testwerte und Funktionen, die nur zum Testen existieren, sind in Konfiguration und Dokumentation als TESTWERT bzw. OPEN gekennzeichnet.

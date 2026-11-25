@@ -1,0 +1,24 @@
+name: CI
+
+# Prüft Branches, die keine Testversion veröffentlichen (z. B. Vorbereitungs- und Fix-Branches) und Pull Requests.
+# main und feature/** werden vom Workflow "Build, test and publish" geprüft (publish.yml).
+on:
+  push:
+    branches-ignore: [main, 'feature/**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: node src/tests/selftest.ts

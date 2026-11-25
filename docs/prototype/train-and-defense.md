@@ -14,7 +14,7 @@
 - CONFIRMED: Wird der Wagon zerstört, ist auch das darauf montierte Geschütz zerstört und nicht funktionsfähig. Die Reparatur des zerstörten Wagons stellt Wagon und Geschütz gemeinsam vollständig wieder her (Geschütz 20/20, vorheriger Zustand irrelevant). Ist der Wagon nur beschädigt, bleiben Wagon und Geschütz unabhängig voneinander funktionsfähig (D-055).
 - CONFIRMED: Die Lokomotive hat im Prototyp keine Zusatzfunktion (D-041).
 - CONFIRMED: Gegner verursachen am Zugziel 10 Schaden (D-052). Zerstörte Zugteile sind keine gültigen Ziele (D-039).
-- CONFIRMED: Spätere Geschütze auf der Lokomotive, weitere Waggons und Upgrades sind nicht Teil des Prototyps (D-054, D-059).
+- CONFIRMED: Spätere Geschütze auf der Lokomotive, weitere Waggons und Upgrades sind nicht Teil des ersten Gameplay-Prototyps (D-054, D-059). Zusätzliche Waggons und Geschützplatzierung gehören seit D-062 zum erweiterten Gesamtprototyp, ihre Regeln sind OPEN (Q-025). Bis zu einer Funktionsentscheidung gilt der Zugaufbau aus D-054.
 - CONFIRMED **Zugausrichtung** (D-061, gilt für das gesamte Spiel, auch für die grafische Gestaltung): Der Zug fährt immer von links nach rechts. Die Lokomotive steht immer ganz rechts, ihre Front zeigt nach rechts (Fahrtrichtung). Alle Wagen stehen links von der Lokomotive. Weitere Wagen werden später links ergänzt.
 
 ## Offen
