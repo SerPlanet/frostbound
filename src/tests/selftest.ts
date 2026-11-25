@@ -135,8 +135,8 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
   // --- Balance-Teststand 1: Zielwerte (bewusst als feste Zahlen, damit eine versehentliche Änderung auffällt)
   {
     check("Teststand 1  Angriffsintervalle: Spieler 700 ms, Geschütz 2500 ms", TESTWERTE.player.cooldownMs === 700 && TESTWERTE.turret.cooldownMs === 2500);
-    check("Teststand 5  Reparaturschritt (aktive Testwerte): 30 HP je 20000 ms (1,5 HP/s im Mittel)", TESTWERTE.repairStepHp === 30 && TESTWERTE.repairStepMs === 20000 && TESTWERTE.repairStepHp / (TESTWERTE.repairStepMs / 1000) === 1.5);
-    check("Teststand 5  Die bestätigte Regel D-056 bleibt in der Konfiguration erhalten (5 HP je 5000 ms, nicht aktiv)", CONFIRMED.repairStepHp === 5 && CONFIRMED.repairStepMs === 5000);
+    check("Teststand 6  Reparaturschritt (aktive Testwerte): 30 HP je 30000 ms (1 HP/s im Mittel)", TESTWERTE.repairStepHp === 30 && TESTWERTE.repairStepMs === 30000 && TESTWERTE.repairStepHp / (TESTWERTE.repairStepMs / 1000) === 1);
+    check("Teststand 6  Die bestätigte Regel D-056 bleibt in der Konfiguration erhalten (5 HP je 5000 ms, nicht aktiv)", CONFIRMED.repairStepHp === 5 && CONFIRMED.repairStepMs === 5000);
     const plans: Record<Difficulty, { atSec: number; count: number }[]> = {
       gemuetlich: [...[0, 1, 2].map((i) => ({ atSec: 3 + 6 * i, count: 1 })), ...Array.from({ length: 10 }, (_, i) => ({ atSec: 25 + 5 * i, count: 3 })), ...Array.from({ length: 7 }, (_, i) => ({ atSec: 85 + i, count: 2 }))],
       normal: [...[0, 1, 2, 3].map((i) => ({ atSec: 3 + 6 * i, count: 1 })), ...Array.from({ length: 10 }, (_, i) => ({ atSec: 26 + 5 * i, count: 3 })), ...Array.from({ length: 22 }, (_, i) => ({ atSec: 91 + i, count: 1 }))],
@@ -149,7 +149,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
         plan.length === plans[d].length && plan.every((e, i) => e.atMs === plans[d][i].atSec * 1000 && e.count === plans[d][i].count),
       );
     }
-    // Reparatur mit der echten Implementierung: 30 HP erst nach 20000 ms, nichts davor
+    // Reparatur mit der echten Implementierung: 30 HP erst nach 30000 ms, nichts davor
     const mkRepairWorld = (): World => {
       const rw = createWorld("normal", makeTestRandom());
       rw.spawnPlan = [{ atMs: 1e12, count: 1 }];
@@ -159,34 +159,39 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       return rw;
     };
     const before = mkRepairWorld();
-    for (let t = 0; t < 19900; t += 100) updateRepair(before, 100);
+    updateRepair(before, 29999);
     const after = mkRepairWorld();
-    for (let t = 0; t < 20000; t += 100) updateRepair(after, 100);
-    check("Teststand 5  Vor Ablauf von 20 s (19,9 s) keine Heilung, nach 20 s genau +30 HP auf einmal", before.wagon.hp === 50 && after.wagon.hp === 80);
+    updateRepair(after, 29999);
+    updateRepair(after, 1);
+    check("Teststand 6  Nach 29999 ms keine Heilung, nach 30000 ms genau +30 HP auf einmal", before.wagon.hp === 50 && after.wagon.hp === 80);
+    const fine = mkRepairWorld();
+    for (let t = 0; t < 29900; t += 100) updateRepair(fine, 100);
+    updateRepair(fine, 99);
+    check("Teststand 6  In 100-ms-Schritten bis 29999 ms ebenfalls keine Heilung", fine.wagon.hp === 50);
     const gradual = mkRepairWorld();
     let everChanged = false;
-    for (let t = 0; t < 19900; t += LAYOUT.stepMs) {
+    for (let t = 0; t < 29900; t += LAYOUT.stepMs) {
       updateRepair(gradual, LAYOUT.stepMs);
       if (gradual.wagon.hp !== 50) everChanged = true;
     }
-    check("Teststand 5  Während der 20 s ändert sich der HP-Wert in keinem Schritt (keine schrittweise Heilung)", !everChanged && gradual.wagon.repairProgressMs > 19000);
+    check("Teststand 6  Während der 30 s ändert sich der HP-Wert in keinem Schritt (keine schrittweise Heilung)", !everChanged && gradual.wagon.repairProgressMs > 29000);
     const capped = mkRepairWorld();
     capped.wagon.hp = 90;
-    for (let t = 0; t < 20000; t += 100) updateRepair(capped, 100);
-    check("Teststand 5  Keine Heilung über das HP-Maximum hinaus (90 + 30 ergibt 100)", capped.wagon.hp === 100 && capped.wagon.hp <= capped.wagon.maxHp);
+    updateRepair(capped, 30000);
+    check("Teststand 6  Keine Heilung über das HP-Maximum hinaus (90 + 30 ergibt 100)", capped.wagon.hp === 100 && capped.wagon.hp <= capped.wagon.maxHp);
     // Reparatur läuft während automatischer Angriffe weiter (stepWorld: Spielerangriff und Reparatur im selben Lauf)
     const cw = mkRepairWorld();
     cw.enemies.push({ id: 1, x: cw.player.x + 20, y: cw.player.y, hp: 1000, target: "wagon" });
     cw.wagon.hp = 50;
     let shotsFired = 0;
-    for (let t = 0; t < 20100; t += LAYOUT.stepMs) {
+    for (let t = 0; t < 30100; t += LAYOUT.stepMs) {
       // Der Gegner bleibt neben dem Spieler (kein Zugkontakt), der Spieler greift ihn laufend an.
       cw.enemies[0].x = cw.player.x + 20;
       cw.enemies[0].y = cw.player.y;
       stepWorld(cw, { x: 0, y: 0 }, LAYOUT.stepMs);
       shotsFired += cw.events.filter((ev) => ev.type === "shot" && ev.source === "player").length;
     }
-    check("Teststand 5  Reparatur läuft während des automatischen Spielerangriffs weiter (+30 HP nach 20 s, Spieler hat in dieser Zeit geschossen)", cw.wagon.hp === 80 && shotsFired >= 25 && cw.activeRepair === "wagon");
+    check("Teststand 6  Reparatur läuft während des automatischen Spielerangriffs weiter (+30 HP nach 30 s, Spieler hat in dieser Zeit geschossen)", cw.wagon.hp === 80 && shotsFired >= 35 && cw.activeRepair === "wagon");
   }
   check("REQ-CORE-002 Wellenplan folgt der Konfiguration", createWorld("normal").spawnPlan.length === TESTWERTE.waves.normal.singles.count + TESTWERTE.waves.normal.groups.count + TESTWERTE.waves.normal.wave.count / TESTWERTE.waves.normal.wave.perSecond);
 
@@ -1003,7 +1008,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     const dt = LAYOUT.stepMs;
     const stepMs = TESTWERTE.repairStepMs;
     // Alle Zeitangaben dieses Abschnitts sind als Vielfache des konfigurierten Reparaturschritts geschrieben
-    // (Teststand 5: ein Schritt = 20000 ms und 30 HP). Die HP-Werte folgen aus TESTWERTE.repairStepHp.
+    // (Teststand 6: ein Schritt = 30000 ms und 30 HP). Die HP-Werte folgen aus TESTWERTE.repairStepHp.
     const H = TESTWERTE.repairStepHp;
     const sc = (frac: number): number => frac * stepMs;
     const fresh = (): World => {
@@ -1063,7 +1068,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       rep(world, sc(0.38));
       const mid = world.wagon.hp;
       rep(world, sc(0.04));
-      check("REQ-REP-003  Wiedereintritt setzt fort: nach insgesamt einem Schritt Anwesenheit (12 s + 8 s) +30 HP", mid === 50 && world.wagon.hp === 50 + H);
+      check("REQ-REP-003  Wiedereintritt setzt fort: nach insgesamt einem Schritt Anwesenheit (18 s + 12 s) +30 HP", mid === 50 && world.wagon.hp === 50 + H);
       // Innerhalb der Zone frei bewegen
       world.player.x = world.wagon.zone.x + 5;
       world.player.y = world.wagon.zone.y + 5;
@@ -1095,7 +1100,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       }
       const nSteps = Math.ceil(100 / H);
       check("REQ-REP-003  Genau 30 HP je Reparaturschritt, der letzte nur bis zum Maximum (0 auf 100: 30, 30, 30, 10)", gains.length === nSteps && gains.slice(0, -1).every((g) => g === H) && gains[gains.length - 1] === 100 - (nSteps - 1) * H);
-      check("REQ-REP-003  Eine vollständige Reparatur von 0 auf 100 HP dauert 4 Schritte (Teststand 5: 80 s; bestätigt war 100 s bei 5 HP je 5000 ms)", Math.abs(t - nSteps * stepMs) <= dt + 1e-6);
+      check("REQ-REP-003  Eine vollständige Reparatur von 0 auf 100 HP dauert 4 Schritte (Teststand 6: 120 s; bestätigt war 100 s bei 5 HP je 5000 ms)", Math.abs(t - nSteps * stepMs) <= dt + 1e-6);
     }
     {
       const counts: number[] = [];
@@ -1106,12 +1111,12 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
         rep(world, sc(2.5), step);
         counts.push(world.wagon.hp);
       }
-      check("REQ-REP-003  Reparaturfortschritt ist bildratenunabhängig (nach 50 s bei 120, 60, 30 Schritten/s: je 20 + 60 = 80 HP)", counts.every((c) => c === 20 + 2 * H));
+      check("REQ-REP-003  Reparaturfortschritt ist bildratenunabhängig (nach 75 s bei 120, 60, 30 Schritten/s: je 20 + 60 = 80 HP)", counts.every((c) => c === 20 + 2 * H));
       const big = fresh();
       big.wagon.hp = 10;
       intoZone(big, "wagon");
       updateRepair(big, sc(2.4));
-      check("REQ-REP-003  Ein sehr großer Zeitschritt (48 s) liefert 2 Schritte (+60 HP) und behält 8 s Rest", big.wagon.hp === 10 + 2 * H && Math.abs(big.wagon.repairProgressMs - sc(0.4)) < 1e-6);
+      check("REQ-REP-003  Ein sehr großer Zeitschritt (72 s) liefert 2 Schritte (+60 HP) und behält 12 s Rest", big.wagon.hp === 10 + 2 * H && Math.abs(big.wagon.repairProgressMs - sc(0.4)) < 1e-6);
     }
 
     // Nur ein Teil gleichzeitig
@@ -1167,7 +1172,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       damageTrainPart(world, "locomotive", 1000);
       intoZone(world, "locomotive");
       rep(world, sc(4.2));
-      check("REQ-REP-005  Auch die Lokomotive wird nach 4 Schritten (80 s) wieder intakt (ohne Zusatzwirkung auf Wagon und Geschütz)", world.locomotive.hp === 100 && !world.locomotive.destroyed && world.wagon.hp === 100 && !world.turret.destroyed && world.turret.hp === 20);
+      check("REQ-REP-005  Auch die Lokomotive wird nach 4 Schritten (120 s) wieder intakt (ohne Zusatzwirkung auf Wagon und Geschütz)", world.locomotive.hp === 100 && !world.locomotive.destroyed && world.wagon.hp === 100 && !world.turret.destroyed && world.turret.hp === 20);
     }
 
     // Wagon und Geschütz
@@ -1208,7 +1213,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       intoZone(world, "wagon");
       rep(world, sc(1.02));
       check("REQ-REP-001  Reparatur ist kostenlos: kein Ressourcenzustand vorhanden oder nötig", !("resources" in world) && world.wagon.hp === 50 + H);
-      check("REQ-STA-001  Reparaturzeit wird je Zugteil als aktive Reparaturzeit erfasst (20,4 s am Wagon, 0 an der Lokomotive)", Math.abs(world.stats.repairMsByPart.wagon - sc(1.02)) < 20 && world.stats.repairMsByPart.locomotive === 0);
+      check("REQ-STA-001  Reparaturzeit wird je Zugteil als aktive Reparaturzeit erfasst (30,6 s am Wagon, 0 an der Lokomotive)", Math.abs(world.stats.repairMsByPart.wagon - sc(1.02)) < 20 && world.stats.repairMsByPart.locomotive === 0);
     }
 
     // Integration über stepWorld: Spielerangriff läuft während der Reparatur
@@ -1226,7 +1231,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
         target.hp === 2 && world.events.some((e) => e.type === "shot" && e.source === "player") && world.activeRepair === "wagon" && world.wagon.repairProgressMs > 0,
       );
       for (let i = 0; i < Math.ceil((1.05 * stepMs) / dt); i++) stepWorld(world, { x: 0, y: 0 }, dt);
-      check("REQ-REP-003  Über stepWorld: Fortschritt und Kills laufen gleichzeitig (Wagon +30 HP nach 20 s, Gegner besiegt)", world.wagon.hp >= 50 + H && world.stats.killsByPlayer === 1);
+      check("REQ-REP-003  Über stepWorld: Fortschritt und Kills laufen gleichzeitig (Wagon +30 HP nach 30 s, Gegner besiegt)", world.wagon.hp >= 50 + H && world.stats.killsByPlayer === 1);
     }
     for (const status of ["won", "lost"] as const) {
       const world = fresh();

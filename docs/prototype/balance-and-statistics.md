@@ -26,7 +26,7 @@ Spalte „Status“: **CONFIRMED** = bestätigter Startwert für den Prototyp (D
 | R_p | Reichweite des Spielerangriffs in LE | 90 | TESTWERT |
 | d_t, f_t | Geschützschaden, Geschützfeuerrate (1/s) | 1 und 0,4 (Teststand 1, vorher 1) | TESTWERT |
 | HP_L, HP_W, HP_G | Lebenspunkte Lokomotive, Wagon, Geschütz | 100, 100, 20 | CONFIRMED |
-| r | Reparaturleistung, Mittel: 5 HP je 5 s | 1 HP/s (bestätigt, D-056). Im Teststand 5 vorläufig 1,5 HP/s im Mittel als 30 HP auf einmal nach 20 s (TESTWERT; frühere Teststände: 2 HP/s, dann 5 HP je 3,333 s) | CONFIRMED / TESTWERT |
+| r | Reparaturleistung, Mittel: 5 HP je 5 s | 1 HP/s (bestätigt, D-056). Im Teststand 6 vorläufig 1 HP/s im Mittel als 30 HP auf einmal nach 30 s (TESTWERT; frühere Teststände: 2 HP/s, 5 HP je 3,333 s, 30 HP je 20 s) | CONFIRMED / TESTWERT |
 | N | Gesamtzahl der Gegner | siehe [difficulty.md](difficulty.md) | TESTWERT |
 
 Das Geschütz hat das gesamte Spielfeld als Reichweite (D-037). Seine Reichweite ist kein Parameter. Das Geschütz wird im Prototyp nicht angegriffen, HP_G geht nicht in die Schadensrechnung ein.

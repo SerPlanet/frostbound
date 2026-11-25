@@ -3,7 +3,7 @@
 //
 // - Der Spieler repariert ein Zugteil, solange er in dessen Reparaturzone steht und das Teil
 //   repariert werden kann (beschädigt oder zerstört). Es gibt keine Taste dafür.
-// - Je Teil läuft ein Fortschrittszähler. Nach TESTWERTE.repairStepMs Anwesenheit kommen auf einmal TESTWERTE.repairStepHp HP hinzu (Teststand 5: 30 HP nach 20000 ms, bestätigt: 5 HP nach 5000 ms, D-056).
+// - Je Teil läuft ein Fortschrittszähler. Nach TESTWERTE.repairStepMs Anwesenheit kommen auf einmal TESTWERTE.repairStepHp HP hinzu (Teststand 6: 30 HP nach 30000 ms, bestätigt: 5 HP nach 5000 ms, D-056).
 //   Verlässt der Spieler die Zone, bleibt der Zählerstand erhalten und läuft später weiter.
 // - Nur ein Teil gleichzeitig. Überlappen Zonen (im Prototyp nicht), gilt die Reihenfolge
 //   Wagon, Lokomotive (TECH-09).

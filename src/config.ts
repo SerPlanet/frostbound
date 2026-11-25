@@ -15,7 +15,7 @@ export const CONFIRMED = {
   enemyDamage: 10,
   // Reparatur, bestätigte Regel (D-056): 5 HP alle 5000 ms (1 HP/s, 0 auf 100 HP in 100 s). Diese Werte
   // bleiben als bestätigte Regel hier stehen, sind aber im Spieltest NICHT aktiv: Die aktiven Werte stehen als
-  // TESTWERTE.repairStepHp und TESTWERTE.repairStepMs (Balance-Teststand 5), siehe dort.
+  // TESTWERTE.repairStepHp und TESTWERTE.repairStepMs (Balance-Teststand 6), siehe dort.
   repairStepHp: 5,
   repairStepMs: 5000,
   // Seitenverhältnis des Spielfeldes (D-058)
@@ -73,13 +73,13 @@ export const TESTWERTE = {
   // Balance-Teststand 1: Angriffsintervalle (vorher je 1000 ms)
   player: { damage: 1, cooldownMs: 700 },
   turret: { damage: 1, cooldownMs: 2500 },
-  // Balance-Teststand 5: Reparaturmechanik mit großen, seltenen Schritten. VORLÄUFIGE TESTWERTE, nicht bestätigt.
-  // 30 HP werden nach 20000 ms Reparaturzeit auf einmal gutgeschrieben, davor keine Heilung (im Mittel 1,5 HP/s).
+  // Balance-Teststand 6: Reparaturmechanik mit großen, seltenen Schritten. VORLÄUFIGE TESTWERTE, nicht bestätigt.
+  // 30 HP werden nach 30000 ms Reparaturzeit auf einmal gutgeschrieben, davor keine Heilung (im Mittel 1 HP/s).
   // Die bestätigte Regel D-056 (CONFIRMED.repairStepHp 5 HP, CONFIRMED.repairStepMs 5000 ms) ist nicht geändert,
   // sondern im Spieltest überlagert. Für den Rückweg auf die bestätigte Regel: repairStepHp 5, repairStepMs 5000.
-  // Frühere Teststände: 5 HP je 2500 ms (Teststand 1), 5 HP je 3333 ms (Teststand 2 bis 4).
+  // Frühere Teststände: 5 HP je 2500 ms (Teststand 1), 5 HP je 3333 ms (Teststand 2 bis 4), 30 HP je 20000 ms (Teststand 5).
   repairStepHp: 30,
-  repairStepMs: 20000,
+  repairStepMs: 30000,
   enemy: { hp: 3, speed: 40 },
   waves: {
     gemuetlich: {
