@@ -134,6 +134,8 @@ export class VisualsScene extends Phaser.Scene {
     const { world, options } = STATES[index].build();
     this.world = world;
     this.options = options;
+    this.view.clearShots();
+    this.view.addShots(world.events, Infinity); // statische Testansicht: Trefferlinien bleiben stehen
     this.titleText.setText(STATES[index].title);
     this.redraw();
   }

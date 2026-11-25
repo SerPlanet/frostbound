@@ -3,6 +3,7 @@
 // Importiert nur game/ und config.ts, keine Browser-APIs, kein Phaser.
 
 import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
+import { runCombat } from "../game/combat.ts";
 import { chooseTarget } from "../game/enemies.ts";
 import { spawnEnemies } from "../game/spawning.ts";
 import { damageTrainPart, damageTurret, getPartCondition } from "../game/train.ts";
@@ -376,8 +377,15 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     const dt = LAYOUT.stepMs;
     const speedStep = (TESTWERTE.enemy.speed * dt) / 1000;
     const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
-    const fresh = (d: Difficulty = "normal"): World => createWorld(d, makeTestRandom());
-    const seq = (values: number[]): (() => number) => {
+    // Die Gegnertests prüfen Spawn, Bewegung, Zielwahl und Zugschaden isoliert: Spieler- und
+    // Geschützangriff sind hier abgeschaltet (Abkühlung unerreichbar hoch).
+    const fresh = (d: Difficulty = "normal"): World => {
+      const world = createWorld(d, makeTestRandom());
+      world.player.attackCooldownMs = 1e15;
+      world.turret.attackCooldownMs = 1e15;
+      return world;
+    };
+    const seq =(values: number[]): (() => number) => {
       let i = 0;
       return () => values[i++ % values.length];
     };
@@ -617,6 +625,247 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       spawnEnemies(world);
       return world.enemies.length === 40 && world.enemies.every((e) => e.hp === TESTWERTE.enemy.hp);
     })());
+  }
+
+  // --- Automatische Angriffe (REQ-CMB-001 bis REQ-CMB-005)
+  {
+    const dt = LAYOUT.stepMs;
+    const range = TESTWERTE.playerRange;
+    const fresh = (): World => createWorld("normal", makeTestRandom());
+    const enemyAt = (id: number, x: number, y: number, hp: number = TESTWERTE.enemy.hp): Enemy => ({ id, x, y, hp, target: "wagon" });
+    const playerOnly = (): World => {
+      const world = fresh();
+      world.turret.destroyed = true; // Geschütz funktionslos, nur der Spieler greift an
+      return world;
+    };
+    const turretOnly = (): World => {
+      const world = fresh();
+      world.player.attackCooldownMs = 1e15; // Spielerangriff abgeschaltet, nur das Geschütz greift an
+      return world;
+    };
+    const shots = (world: World, source: "player" | "turret"): number => world.events.filter((e) => e.type === "shot" && e.source === source).length;
+    const near = (a: number, b: number): boolean => Math.abs(a - b) < 1e-6;
+
+    // Spielerangriff
+    {
+      const world = playerOnly();
+      const e = enemyAt(1, world.player.x + 50, world.player.y);
+      world.enemies.push(e);
+      runCombat(world, dt);
+      check("REQ-CMB-004  Spieler greift einen Gegner innerhalb der Reichweite an (Soforttreffer, 3 auf 2 HP)", e.hp === TESTWERTE.enemy.hp - TESTWERTE.player.damage && shots(world, "player") === 1 && shots(world, "turret") === 0);
+    }
+    {
+      const world = playerOnly();
+      const out = enemyAt(1, world.player.x + range + 10, world.player.y);
+      world.enemies.push(out);
+      runCombat(world, dt);
+      check("REQ-CMB-004  Spieler greift außerhalb der Reichweite nicht an", out.hp === 3 && world.events.length === 0);
+      const edge = playerOnly();
+      const atEdge = enemyAt(1, edge.player.x + range, edge.player.y);
+      edge.enemies.push(atEdge);
+      runCombat(edge, dt);
+      const beyond = playerOnly();
+      const justOut = enemyAt(1, beyond.player.x + range + 0.01, beyond.player.y);
+      beyond.enemies.push(justOut);
+      runCombat(beyond, dt);
+      check("REQ-CMB-004  Reichweitengrenze: genau 90 LE wird getroffen, 90,01 LE nicht", atEdge.hp === 2 && justOut.hp === 3);
+    }
+    {
+      const world = playerOnly();
+      const far = enemyAt(1, world.player.x + 80, world.player.y);
+      const closest = enemyAt(2, world.player.x, world.player.y + 40);
+      const mid = enemyAt(3, world.player.x - 60, world.player.y);
+      world.enemies.push(far, closest, mid);
+      runCombat(world, dt);
+      check("REQ-CMB-004  Spieler wählt den nächsten Gegner (Einzelziel: nur dieser wird getroffen)", closest.hp === 2 && far.hp === 3 && mid.hp === 3 && shots(world, "player") === 1);
+      const tie = playerOnly();
+      const a = enemyAt(7, tie.player.x + 50, tie.player.y);
+      const b = enemyAt(5, tie.player.x - 50, tie.player.y);
+      tie.enemies.push(a, b);
+      runCombat(tie, dt);
+      check("REQ-CMB-004  Bei gleichem Abstand gewinnt die kleinere Gegner-ID (TECH-19)", b.hp === 2 && a.hp === 3);
+    }
+    {
+      const world = fresh();
+      world.player.y = 14;
+      const hidden = enemyAt(1, world.player.x, -10);
+      world.enemies.push(hidden);
+      runCombat(world, dt);
+      check("REQ-CMB-002  Gegner außerhalb des sichtbaren Spielfeldes (oberhalb) sind kein gültiges Ziel, für beide Quellen", hidden.hp === 3 && world.events.length === 0);
+    }
+
+    // Geschützangriff
+    {
+      const world = turretOnly();
+      const e = enemyAt(1, 900, 300);
+      world.enemies.push(e);
+      runCombat(world, dt);
+      check("REQ-CMB-002  Geschütz greift unabhängig vom Spieler an (Spieler außer Reichweite und ohne Angriff)", e.hp === 2 && shots(world, "turret") === 1 && shots(world, "player") === 0);
+    }
+    {
+      const world = fresh();
+      world.player.attackCooldownMs = 500;
+      const e = enemyAt(1, world.player.x + 10, world.player.y);
+      world.enemies.push(e);
+      runCombat(world, dt);
+      check("REQ-CMB-001  Abkühlungen sind unabhängig: Spieler noch nicht bereit, Geschütz schießt trotzdem", e.hp === 2 && shots(world, "turret") === 1 && shots(world, "player") === 0);
+      const other = fresh();
+      other.turret.attackCooldownMs = 500;
+      const f = enemyAt(1, other.player.x + 10, other.player.y);
+      other.enemies.push(f);
+      runCombat(other, dt);
+      check("REQ-CMB-001  Umgekehrt: Geschütz noch nicht bereit, Spieler schießt trotzdem", f.hp === 2 && shots(other, "player") === 1 && shots(other, "turret") === 0);
+    }
+    {
+      let reached = true;
+      for (const [x, y] of [[0, 0], [LAYOUT.field.width, 0], [0, LAYOUT.field.height - 1], [LAYOUT.field.width, LAYOUT.field.height - 1], [LAYOUT.field.width / 2, 1]]) {
+        const world = turretOnly();
+        const e = enemyAt(1, x, y);
+        world.enemies.push(e);
+        runCombat(world, dt);
+        if (e.hp !== 2) reached = false;
+      }
+      check("REQ-CMB-002  Geschütz erreicht Gegner im gesamten Spielfeld (alle Ecken und Mitte oben)", reached);
+      const world = turretOnly();
+      const nearTurret = enemyAt(2, 700, 400);
+      const farAway = enemyAt(1, 10, 10);
+      world.enemies.push(farAway, nearTurret);
+      runCombat(world, dt);
+      check("REQ-CMB-002  Geschütz wählt den nächsten Gegner (Bezugspunkt Geschützposition)", nearTurret.hp === 2 && farAway.hp === 3);
+    }
+    {
+      const destroyed = turretOnly();
+      destroyed.turret.destroyed = true;
+      const e1 = enemyAt(1, 900, 300);
+      destroyed.enemies.push(e1);
+      runCombat(destroyed, dt);
+      check("REQ-CMB-002  Zerstörtes Geschütz greift nicht an", e1.hp === 3 && destroyed.events.length === 0);
+
+      const noWagon = turretOnly();
+      damageTrainPart(noWagon, "wagon", 1000);
+      noWagon.events.length = 0;
+      const e2 = enemyAt(1, 900, 300);
+      noWagon.enemies.push(e2);
+      runCombat(noWagon, dt);
+      check("REQ-CMB-002  Zerstörter Wagon bedeutet zerstörtes Geschütz: kein Angriff", noWagon.turret.destroyed && e2.hp === 3 && noWagon.events.length === 0);
+
+      const damagedWagon = turretOnly();
+      damageTrainPart(damagedWagon, "wagon", 99);
+      damagedWagon.events.length = 0;
+      const e3 = enemyAt(1, 900, 300);
+      damagedWagon.enemies.push(e3);
+      runCombat(damagedWagon, dt);
+      check("REQ-CMB-002  Beschädigter, nicht zerstörter Wagon: Geschütz greift an", e3.hp === 2);
+
+      const damagedTurret = turretOnly();
+      damageTurret(damagedTurret, 15);
+      const e4 = enemyAt(1, 900, 300);
+      damagedTurret.enemies.push(e4);
+      runCombat(damagedTurret, dt);
+      check("REQ-CMB-002  Beschädigtes Geschütz (5 HP) greift weiterhin an", e4.hp === 2);
+
+      const repaired = turretOnly();
+      repaired.turret.destroyed = true;
+      runCombat(repaired, dt);
+      repaired.turret.destroyed = false;
+      const e5 = enemyAt(1, 900, 300);
+      repaired.enemies.push(e5);
+      runCombat(repaired, dt);
+      check("REQ-CMB-002  Wieder funktionsfähiges Geschütz ist sofort bereit", e5.hp === 2);
+    }
+
+    // Beide Quellen, Besiegen, Zählung
+    {
+      const world = fresh();
+      const e = enemyAt(1, world.player.x + 10, world.player.y);
+      world.enemies.push(e);
+      runCombat(world, dt);
+      check("REQ-CMB-001  Beide Quellen können denselben Gegner im selben Schritt treffen (3 auf 1 HP)", e.hp === 1 && shots(world, "player") === 1 && shots(world, "turret") === 1);
+    }
+    {
+      const world = fresh();
+      const e = enemyAt(1, world.player.x + 10, world.player.y, 2);
+      world.enemies.push(e);
+      runCombat(world, dt);
+      check(
+        "REQ-CMB-005  Tödlicher Treffer: Gegner wird bei 0 HP entfernt, der Kill geht an die Quelle des letzten Treffers (Geschütz)",
+        world.enemies.length === 0 && world.stats.killsByTurret === 1 && world.stats.killsByPlayer === 0 && world.events.some((ev) => ev.type === "enemyDefeated" && ev.enemyId === 1 && ev.source === "turret"),
+      );
+      const solo = fresh();
+      solo.enemies.push(enemyAt(1, solo.player.x + 10, solo.player.y, 1));
+      runCombat(solo, dt);
+      check("REQ-CMB-005  Ein Gegner mit 1 HP wird vom Spieler besiegt und genau einmal gezählt (das Geschütz hat kein Ziel mehr)", solo.enemies.length === 0 && solo.stats.killsByPlayer === 1 && solo.stats.killsByTurret === 0 && shots(solo, "turret") === 0);
+      const alive = fresh();
+      const e3 = enemyAt(1, alive.player.x + 10, alive.player.y, 5);
+      alive.enemies.push(e3);
+      runCombat(alive, dt);
+      check("REQ-CMB-005  Ein Gegner mit Rest-HP bleibt bestehen, nicht gezählt, HP nie negativ", alive.enemies.length === 1 && e3.hp === 3 && alive.stats.killsByPlayer + alive.stats.killsByTurret === 0);
+    }
+    {
+      const world = turretOnly();
+      world.enemies.push(enemyAt(1, 800, 600, 1));
+      for (let i = 0; i < 100; i++) stepWorld(world, { x: 0, y: 0 }, dt);
+      check("REQ-CMB-005  Ein besiegter Gegner richtet keinen Zugschaden an", world.wagon.hp === 100 && world.locomotive.hp === 100 && world.stats.reachedTrain === 0 && world.stats.killsByTurret === 1);
+    }
+
+    // Angriffsintervalle, bildratenunabhängig
+    for (const source of ["player", "turret"] as const) {
+      const results: { stepMs: number; count: number; gaps: number[] }[] = [];
+      for (const stepMs of [1000 / 120, 1000 / 60, 1000 / 30]) {
+        const world = source === "player" ? playerOnly() : turretOnly();
+        const e = enemyAt(1, world.player.x + 5, world.player.y, 1_000_000);
+        world.enemies.push(e);
+        const times: number[] = [];
+        let t = 0;
+        while (t < 10000) {
+          world.events.length = 0;
+          runCombat(world, stepMs);
+          t += stepMs;
+          if (shots(world, source) > 0 && t <= 10000 + 1e-6) times.push(t); // nur Schüsse innerhalb von 10 s zählen
+        }
+        results.push({ stepMs, count: times.length, gaps: times.slice(1).map((v, i) => v - times[i]) });
+      }
+      const interval = source === "player" ? TESTWERTE.player.cooldownMs : TESTWERTE.turret.cooldownMs;
+      check(
+        `REQ-CMB-001  Feuerrate ${source === "player" ? "des Spielers" : "des Geschützes"} ist bei 120, 60 und 30 Schritten pro Sekunde gleich (erster Schuss sofort, dann alle 1000 ms: 11 Schüsse in 10 s)`,
+        results.every((r) => r.count === 11),
+      );
+      check(
+        `REQ-CMB-001  Abstand zwischen zwei Schüssen entspricht dem Intervall (${interval} ms, Schrittgröße als Toleranz)`,
+        results.every((r) => r.gaps.every((gap) => Math.abs(gap - interval) <= r.stepMs + 1e-6)),
+      );
+    }
+    {
+      const world = fresh();
+      world.enemies.push(enemyAt(1, world.player.x, world.player.y, 100));
+      for (let i = 0; i < 10; i++) runCombat(world, dt);
+      check("REQ-CMB-001  Nach dem Schuss läuft die Abkühlung pro Schritt herunter (ein Schuss, dann Intervall minus 10 Schritte)", near(world.player.attackCooldownMs, TESTWERTE.player.cooldownMs - 10 * dt) && world.enemies[0].hp === 100 - 2 * 1);
+      const idle = fresh();
+      for (let i = 0; i < 300; i++) runCombat(idle, dt);
+      idle.enemies.push(enemyAt(1, idle.player.x, idle.player.y, 100));
+      runCombat(idle, dt);
+      check("REQ-CMB-001  Nach langer Wartezeit ohne Ziel: sofort ein einziger Schuss je Quelle", shots(idle, "player") === 1 && shots(idle, "turret") === 1 && idle.enemies[0].hp === 98);
+    }
+
+    // Spielende und Gesamtlauf
+    for (const status of ["won", "lost"] as const) {
+      const world = fresh();
+      world.status = status;
+      world.enemies.push(enemyAt(1, world.player.x + 10, world.player.y), enemyAt(2, 900, 300));
+      const before = JSON.stringify(world);
+      for (let i = 0; i < 500; i++) stepWorld(world, { x: 0, y: 0 }, dt);
+      check(`REQ-WL-005   Keine Angriffe und kein Schaden nach Spielende (${status})`, JSON.stringify(world) === before && world.stats.killsByPlayer + world.stats.killsByTurret === 0);
+    }
+    {
+      const world = fresh();
+      for (let i = 0; i < 9000; i++) stepWorld(world, { x: 0, y: 0 }, dt);
+      const s = world.stats;
+      check(
+        "REQ-STA-001  Gesamtlauf mit Verteidigung: gespawnt = Spieler-Kills + Geschütz-Kills + Zug erreicht + noch aktiv",
+        s.spawned === 40 && s.killsByPlayer + s.killsByTurret + s.reachedTrain + world.enemies.length === s.spawned && s.killsByTurret > 0,
+      );
+      check("REQ-DIF-002  Mit Verteidigung kommen weniger Gegner durch als ohne (weniger als 20 am Zug, Schaden entsprechend 10 je Ankunft)", s.reachedTrain < 20 && s.damageByPart.locomotive + s.damageByPart.wagon === s.reachedTrain * CONFIRMED.enemyDamage);
+    }
   }
 
   // --- Konfiguration (REQ-ARC-004)

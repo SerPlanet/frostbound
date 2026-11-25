@@ -51,9 +51,10 @@ export class GameScene extends Phaser.Scene {
     const input = this.readInput();
     while (this.accumulatorMs >= LAYOUT.stepMs) {
       stepWorld(this.world, input, LAYOUT.stepMs);
+      this.view.addShots(this.world.events); // Ereignisse des Schrittes für die Trefferlinien merken
       this.accumulatorMs -= LAYOUT.stepMs;
     }
-    this.view.draw(this.world);
+    this.view.draw(this.world, {}, Math.min(deltaMs, LAYOUT.maxFrameMs));
     this.hud.update(this.world);
   }
 }

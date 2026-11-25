@@ -43,6 +43,8 @@ export const LAYOUT = {
   stepMs: 1000 / 60,
   // Längste Frame-Zeit, die pro Bild in Simulationsschritte umgesetzt wird (verhindert Aufholschleifen)
   maxFrameMs: 100,
+  // Darstellung: Wie lange eine Trefferlinie sichtbar bleibt (nur Anzeige, keine Spielwirkung)
+  shotDisplayMs: 150,
 };
 
 // ---------------------------------------------------------------- TESTWERTE

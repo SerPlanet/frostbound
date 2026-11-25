@@ -5,7 +5,7 @@
 import Phaser from "phaser";
 import { LAYOUT } from "../config.ts";
 import { getPartCondition } from "../game/train.ts";
-import type { Rect, TrainPart, World } from "../game/types.ts";
+import type { GameEvent, Rect, TrainPart, World } from "../game/types.ts";
 
 export interface DrawOptions {
   /** Nur für den Visuals-Test: alle Reparaturzonen zeigen, auch wenn nichts repariert werden muss. */
@@ -51,6 +51,7 @@ function barColor(ratio: number): number {
 
 export class WorldView {
   private readonly g: Phaser.GameObjects.Graphics;
+  private shots: { event: Extract<GameEvent, { type: "shot" }>; remainingMs: number }[] = [];
   private readonly partLabels: Record<"locomotive" | "wagon", Phaser.GameObjects.Text>;
   private readonly zoneLabels: Record<"locomotive" | "wagon", Phaser.GameObjects.Text>;
 
@@ -68,7 +69,7 @@ export class WorldView {
     };
   }
 
-  draw(world: World, options: DrawOptions = {}): void {
+  draw(world: World, options: DrawOptions = {}, deltaMs: number = 0): void {
     const g = this.g;
     g.clear();
 
@@ -103,12 +104,23 @@ export class WorldView {
     g.lineStyle(3, COLOR.outline, 1);
     g.strokeCircle(world.player.x, world.player.y, LAYOUT.playerRadius);
 
-    // Trefferlinien (Platzhalter für spätere shot-Ereignisse).
-    for (const ev of world.events) {
-      if (ev.type !== "shot") continue;
-      g.lineStyle(3, ev.source === "player" ? COLOR.shotPlayer : COLOR.shotTurret, 1);
-      g.lineBetween(ev.fromX, ev.fromY, ev.toX, ev.toY);
+    // Trefferlinien: kurz sichtbar, danach ausgeblendet (reine Anzeige, keine Spielwirkung).
+    this.shots = this.shots.filter((shot) => (shot.remainingMs -= deltaMs) > 0);
+    for (const { event } of this.shots) {
+      g.lineStyle(3, event.source === "player" ? COLOR.shotPlayer : COLOR.shotTurret, 1);
+      g.lineBetween(event.fromX, event.fromY, event.toX, event.toY);
     }
+  }
+
+  /** Merkt sich Treffer-Ereignisse für die Anzeige (Standard: kurz, Infinity für statische Testansichten). */
+  addShots(events: GameEvent[], displayMs: number = LAYOUT.shotDisplayMs): void {
+    for (const event of events) {
+      if (event.type === "shot") this.shots.push({ event, remainingMs: displayMs });
+    }
+  }
+
+  clearShots(): void {
+    this.shots = [];
   }
 
   private drawZone(zone: Rect, id: "locomotive" | "wagon"): void {

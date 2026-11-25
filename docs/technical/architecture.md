@@ -179,6 +179,9 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 | TECH-15 | Zufall als injizierbare Funktion, kein Seed-System. |
 | TECH-16 | Ereignisliste je Schritt für Darstellung und Statistik. |
 | TECH-17 | Deployment: `vite build`, Veröffentlichung von `dist/` über den bestehenden GitHub-Pages-Workflow (anzupassen, siehe Implementierungsplan). |
+| TECH-18 | Angriffsablauf je Quelle (Schritt 7): Die Abkühlung zählt pro Schritt herunter. Ist sie ≤ 0 (mit 1e-6 ms Rundungstoleranz) und gibt es ein gültiges Ziel, erfolgt der Schuss und die Abkühlung wächst um das Intervall (der Rest wird mitgeführt, die mittlere Feuerrate ist bei jeder Schrittgröße gleich). Der erste Schuss fällt sofort, wenn ein Ziel vorhanden ist. Ohne Ziel bleibt die Quelle bereit (Abkühlung 0). Ein funktionsloses Geschütz hat Abkühlung 0 und ist nach der Reparatur sofort bereit. |
+| TECH-19 | Gültiges Ziel für beide Quellen: lebender Gegner im sichtbaren Spielfeld (y ≥ 0). Der Spielerangriff nutzt zusätzlich die Reichweite (≤ 90 LE, Bezugspunkt Spielerposition). Innerhalb eines Schritts schlägt zuerst der Spieler zu, dann das Geschütz. Beide dürfen denselben Gegner treffen, der Kill geht an die Quelle des tödlichen Treffers. Bei gleichem Abstand gewinnt die kleinere Gegner-ID. |
+| TECH-20 | Schrittreihenfolge: Kontakt und Zugschaden (Schritt 4) kommen vor den Angriffen (Schritt 5). Ein Gegner, der in einem Schritt sein Ziel erreicht, hat seinen Schaden angerichtet, bevor er beschossen wird. Trefferlinien bleiben 150 ms sichtbar (reine Anzeige). |
 
 ## 10. Anforderungen
 
