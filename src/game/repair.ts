@@ -3,7 +3,7 @@
 //
 // - Der Spieler repariert ein Zugteil, solange er in dessen Reparaturzone steht und das Teil
 //   repariert werden kann (beschädigt oder zerstört). Es gibt keine Taste dafür.
-// - Je Teil läuft ein Fortschrittszähler. Alle TESTWERTE.repairStepMs Anwesenheit kommen 5 HP hinzu (bestätigt: 5000 ms, Teststand 2: 3333 ms).
+// - Je Teil läuft ein Fortschrittszähler. Nach TESTWERTE.repairStepMs Anwesenheit kommen auf einmal TESTWERTE.repairStepHp HP hinzu (Teststand 5: 30 HP nach 20000 ms, bestätigt: 5 HP nach 5000 ms, D-056).
 //   Verlässt der Spieler die Zone, bleibt der Zählerstand erhalten und läuft später weiter.
 // - Nur ein Teil gleichzeitig. Überlappen Zonen (im Prototyp nicht), gilt die Reihenfolge
 //   Wagon, Lokomotive (TECH-09).
@@ -12,7 +12,7 @@
 //   und bereit (D-055). Ein nur beschädigter Wagon lässt das Geschütz unberührt.
 // - Die Reparatur läuft unabhängig vom Spielerangriff weiter (combat.ts wird nicht beeinflusst).
 
-import { CONFIRMED, TESTWERTE } from "../config.ts";
+import { TESTWERTE } from "../config.ts";
 import { getPartCondition } from "./train.ts";
 import type { Rect, TrainPart, World } from "./types.ts";
 
@@ -57,7 +57,7 @@ export function updateRepair(world: World, dtMs: number): void {
 
   while (part.repairProgressMs >= TESTWERTE.repairStepMs - STEP_EPSILON_MS && part.hp < part.maxHp) {
     part.repairProgressMs = Math.max(0, part.repairProgressMs - TESTWERTE.repairStepMs);
-    part.hp = Math.min(part.maxHp, part.hp + CONFIRMED.repairStepHp);
+    part.hp = Math.min(part.maxHp, part.hp + TESTWERTE.repairStepHp);
   }
 
   if (part.hp >= part.maxHp) completeRepair(world, part);

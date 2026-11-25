@@ -152,7 +152,7 @@ Alle Werte stehen an genau einer Stelle (TECH-03). Gruppen: `CONFIRMED`, `LAYOUT
 | Spielerreichweite | 90 LE |
 | Spielerschaden, Abkühlung | 1, 700 ms (Balance-Teststand 1, vorher 1000 ms) |
 | Geschützschaden, Abkühlung | 1, 2500 ms (Balance-Teststand 1, vorher 1000 ms) |
-| Reparaturschritt | 5 HP je 3333 ms (Balance-Teststand 2, vorläufig; bestätigt ist 5000 ms, D-056) |
+| Reparaturschritt | 30 HP je 20000 ms (Balance-Teststand 5, vorläufig, 1,5 HP/s im Mittel; bestätigt ist 5 HP je 5000 ms, D-056, nicht aktiv) |
 | Gegner-HP | 3 |
 | Gegnertempo | 40 LE/s |
 | Wellenpläne je Grad | siehe [../prototype/difficulty.md](../prototype/difficulty.md) |
