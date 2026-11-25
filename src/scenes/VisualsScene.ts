@@ -6,6 +6,7 @@
 
 import Phaser from "phaser";
 import { CONFIRMED } from "../config.ts";
+import { getRoundSummary } from "../game/stats.ts";
 import { damageTrainPart, damageTurret } from "../game/train.ts";
 import { createWorld } from "../game/world.ts";
 import type { TrainPart, World } from "../game/types.ts";
@@ -132,6 +133,14 @@ export class VisualsScene extends Phaser.Scene {
       color: "#8aa4bf",
     });
 
+    this.add.text(16, 118, "Ergebnisbildschirm-Vorschau mit Beispielwerten: N Niederlage, S Sieg (nur Testmodus).", {
+      fontFamily: "Arial, sans-serif",
+      fontSize: "14px",
+      color: "#8aa4bf",
+    });
+    this.input.keyboard?.on("keydown-N", () => this.previewResult("lost"));
+    this.input.keyboard?.on("keydown-S", () => this.previewResult("won"));
+
     NUMBER_KEYS.forEach((key, i) => this.input.keyboard?.on(`keydown-${key}`, () => this.show(i)));
     this.input.keyboard?.on("keydown-Q", () => this.applyDamage(() => damageTrainPart(this.world, "locomotive", CONFIRMED.enemyDamage)));
     this.input.keyboard?.on("keydown-E", () => this.applyDamage(() => damageTrainPart(this.world, "wagon", CONFIRMED.enemyDamage)));
@@ -151,6 +160,25 @@ export class VisualsScene extends Phaser.Scene {
     this.view.addShots(world.events, Infinity); // statische Testansicht: Trefferlinien bleiben stehen
     this.titleText.setText(STATES[index].title);
     this.redraw();
+  }
+
+  /** Zeigt den Ergebnisbildschirm mit fest vorgegebenen Beispielwerten (keine Simulation, keine Spielregeln). */
+  private previewResult(result: "won" | "lost"): void {
+    const world = createWorld("normal");
+    world.status = result;
+    world.stats.result = result;
+    if (result === "won") {
+      world.timeMs = 128000;
+      Object.assign(world.stats, { spawned: 40, killsByPlayer: 20, killsByTurret: 16, reachedTrain: 4 });
+      world.stats.damageByPart = { locomotive: 10, wagon: 30 };
+      world.stats.repairMsByPart = { locomotive: 10000, wagon: 5000 };
+    } else {
+      world.timeMs = 87000;
+      Object.assign(world.stats, { spawned: 31, killsByPlayer: 14, killsByTurret: 9, reachedTrain: 8 });
+      world.stats.damageByPart = { locomotive: 50, wagon: 30 };
+      world.stats.repairMsByPart = { locomotive: 25000, wagon: 5000 };
+    }
+    this.scene.start("Result", { summary: getRoundSummary(world) });
   }
 
   private applyDamage(damage: () => number): void {

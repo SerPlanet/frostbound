@@ -1,53 +1,80 @@
-// Ergebnisbildschirm als Platzhalter (REQ-FLOW-003).
-// Sieg- und Niederlagenlogik sowie echte Statistik folgen in Schritt 9.
+// Ergebnisbildschirm (REQ-FLOW-003, REQ-STA-001): zeigt Sieg oder Niederlage und die
+// tatsächlich erfassten Rundenwerte. Von hier geht es zurück zum Startbildschirm, dort wird
+// eine neue Runde gestartet (D-047). Keine Spielregeln: Die Szene formatiert nur die Zusammenfassung.
 
 import Phaser from "phaser";
-import type { Difficulty } from "../game/types.ts";
+import type { RoundSummary } from "../game/stats.ts";
 import { DIFFICULTY_LABELS } from "../view/Hud.ts";
 
-const STAT_LABELS = [
-  "Gespawnte Gegner",
-  "Durch den Spieler besiegt",
-  "Durch das Zuggeschütz besiegt",
-  "Gegner, die den Zug erreicht haben",
-  "Verursachter Schaden je Zugteil",
-  "Reparaturzeiten",
-  "Rundenergebnis",
-];
+const FONT = "Arial, sans-serif";
+
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")} min`;
+}
+
+function seconds(ms: number): string {
+  return `${Math.round(ms / 1000)} s`;
+}
+
+/** Zeilen der Statistik: Bezeichnung und Wert (die sieben Werte aus D-048, Gespawnte mit Gesamtzahl). */
+function statLines(s: RoundSummary): [string, string][] {
+  return [
+    ["Gegner gespawnt", `${s.spawned} von ${s.plannedEnemies}`],
+    ["Durch den Spieler besiegt", String(s.defeatedByPlayer)],
+    ["Durch das Zuggeschütz besiegt", String(s.defeatedByTurret)],
+    ["Gegner haben den Zug erreicht", String(s.reachedTrain)],
+    ["Verursachter Schaden", `Lokomotive ${s.damageLocomotive} HP  ·  Wagon ${s.damageWagon} HP`],
+    ["Reparaturzeit", `Lokomotive ${seconds(s.repairMsLocomotive)}  ·  Wagon ${seconds(s.repairMsWagon)}`],
+    ["Rundenergebnis", s.result === "won" ? "Sieg" : "Niederlage"],
+  ];
+}
 
 export class ResultScene extends Phaser.Scene {
-  private result: "won" | "lost" = "won";
-  private difficulty: Difficulty = "normal";
+  private summary: RoundSummary | null = null;
+  private leaving = false;
 
   constructor() {
     super("Result");
   }
 
-  init(data: { result?: "won" | "lost"; difficulty?: Difficulty }): void {
-    this.result = data.result ?? "won";
-    this.difficulty = data.difficulty ?? "normal";
+  init(data: { summary?: RoundSummary }): void {
+    this.summary = data.summary ?? null;
+    this.leaving = false;
   }
 
   create(): void {
-    const won = this.result === "won";
     this.add.rectangle(640, 360, 1280, 720, 0x0b1a2a);
-    this.add
-      .text(640, 110, won ? "SIEG" : "NIEDERLAGE", { fontFamily: "Arial, sans-serif", fontSize: "80px", color: won ? "#7ee08f" : "#ff7a7a" })
-      .setOrigin(0.5);
-    this.add
-      .text(640, 185, `Schwierigkeit: ${DIFFICULTY_LABELS[this.difficulty]}`, { fontFamily: "Arial, sans-serif", fontSize: "24px", color: "#8aa4bf" })
-      .setOrigin(0.5);
+    const s = this.summary;
+    if (s === null) {
+      this.add.text(640, 340, "Kein Rundenergebnis vorhanden", { fontFamily: FONT, fontSize: "32px", color: "#8aa4bf" }).setOrigin(0.5);
+    } else {
+      const won = s.result === "won";
+      this.add.text(640, 100, won ? "SIEG" : "NIEDERLAGE", { fontFamily: FONT, fontSize: "84px", color: won ? "#7ee08f" : "#ff7a7a" }).setOrigin(0.5);
+      this.add
+        .text(640, 180, `Schwierigkeit: ${DIFFICULTY_LABELS[s.difficulty]}   ·   Spieldauer: ${formatDuration(s.durationMs)}`, { fontFamily: FONT, fontSize: "24px", color: "#9db4cc" })
+        .setOrigin(0.5);
+      this.add.text(640, 245, "Rundenstatistik", { fontFamily: FONT, fontSize: "26px", color: "#e6f3ff" }).setOrigin(0.5);
+      statLines(s).forEach(([label, value], i) => {
+        const y = 295 + i * 43;
+        this.add.text(300, y, label, { fontFamily: FONT, fontSize: "22px", color: "#c5d6e6" }).setOrigin(0, 0.5);
+        this.add.text(980, y, value, { fontFamily: FONT, fontSize: "22px", color: "#ffffff" }).setOrigin(1, 0.5);
+      });
+    }
 
-    this.add.text(640, 245, "Statistik (Platzhalter)", { fontFamily: "Arial, sans-serif", fontSize: "26px", color: "#e6f3ff" }).setOrigin(0.5);
-    STAT_LABELS.forEach((label, i) => {
-      const y = 295 + i * 40;
-      this.add.text(380, y, label, { fontFamily: "Arial, sans-serif", fontSize: "22px", color: "#c5d6e6" }).setOrigin(0, 0.5);
-      this.add.text(900, y, "–", { fontFamily: "Arial, sans-serif", fontSize: "22px", color: "#ffffff" }).setOrigin(1, 0.5);
-    });
+    const button = this.add.rectangle(640, 660, 460, 56, 0x16324d).setStrokeStyle(3, 0x44d0ff).setInteractive({ useHandCursor: true });
+    this.add.text(640, 660, "Zurück zum Start (Enter)", { fontFamily: FONT, fontSize: "26px", color: "#ffffff" }).setOrigin(0.5);
+    button.on("pointerover", () => button.setFillStyle(0x24547f));
+    button.on("pointerout", () => button.setFillStyle(0x16324d));
+    button.on("pointerdown", () => this.backToStart());
+    this.input.keyboard?.on("keydown-ENTER", () => this.backToStart());
+  }
 
-    const button = this.add.rectangle(640, 640, 420, 60, 0x16324d).setStrokeStyle(3, 0x44d0ff).setInteractive({ useHandCursor: true });
-    this.add.text(640, 640, "Zurück zum Start (Enter)", { fontFamily: "Arial, sans-serif", fontSize: "26px", color: "#ffffff" }).setOrigin(0.5);
-    button.on("pointerdown", () => this.scene.start("Start"));
-    this.input.keyboard?.on("keydown-ENTER", () => this.scene.start("Start"));
+  private backToStart(): void {
+    if (this.leaving) return;
+    this.leaving = true;
+    this.scene.start("Start");
   }
 }

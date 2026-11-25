@@ -7,6 +7,7 @@ import { runCombat } from "./combat.ts";
 import { moveEnemies, resolveEnemyContacts } from "./enemies.ts";
 import { movePlayer } from "./player.ts";
 import { updateRepair } from "./repair.ts";
+import { checkDefeat, evaluateRoundEnd } from "./roundEnd.ts";
 import { spawnEnemies } from "./spawning.ts";
 import type { Difficulty, PlayerInput, SpawnEntry, TrainPart, World } from "./types.ts";
 
@@ -83,15 +84,15 @@ export function createWorld(difficulty: Difficulty, random: () => number = Math.
  * Bringt die Welt um einen festen Zeitschritt voran.
  * Ist der Status nicht `running`, bleibt die Welt unverändert (REQ-WL-005).
  *
- * Schrittreihenfolge der Systeme (TECH-14). Umgesetzt sind bisher die Schritte 1 bis 6:
+ * Schrittreihenfolge der Systeme (TECH-14). Alle Systeme sind umgesetzt:
  *   1 player.ts     Spieler bewegen (umgesetzt)
  *   2 spawning.ts   Gegner laut Wellenplan erzeugen (umgesetzt)
  *   3 enemies.ts    Gegner bewegen (umgesetzt)
  *   4 enemies.ts    Kontakt, Schaden, Zerstörung, Zielneuwahl (umgesetzt)
  *   5 combat.ts     Spieler- und Geschützangriff (umgesetzt)
  *   6 repair.ts     Reparatur (umgesetzt)
- *   7 roundEnd.ts   Niederlage vor Sieg prüfen
- *   8 stats.ts      Statistik fortschreiben
+ *   7 roundEnd.ts   Niederlage vor Sieg prüfen (umgesetzt; die Niederlage zusätzlich schon direkt nach Schritt 4)
+ *   8 stats.ts      Statistik: Zähler werden von den Systemen fortgeschrieben, stats.ts fasst sie zusammen (umgesetzt)
  */
 export function stepWorld(world: World, input: PlayerInput, dtMs: number): void {
   if (world.status !== "running") return;
@@ -112,11 +113,17 @@ export function stepWorld(world: World, input: PlayerInput, dtMs: number): void 
   // 4 Kontakt, Schaden, Zerstörung, Zielneuwahl
   resolveEnemyContacts(world);
 
+  // Niederlage sofort: Fällt das letzte intakte Zugteil, finden in diesem Schritt keine Angriffe
+  // oder Reparaturen mehr statt, und die Niederlage hat Vorrang vor jedem Sieg (D-050).
+  if (checkDefeat(world)) return;
+
   // 5 Spieler- und Geschützangriff
   runCombat(world, dtMs);
 
   // 6 Reparatur
   updateRepair(world, dtMs);
 
-  // 7 und 8: noch nicht implementiert (siehe Reihenfolge oben).
+  // 7 Rundenende: Niederlage vor Sieg prüfen. Die Statistik (8) wird von den Systemen
+  // laufend fortgeschrieben, siehe stats.ts für die Zusammenfassung.
+  evaluateRoundEnd(world);
 }

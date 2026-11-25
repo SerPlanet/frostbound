@@ -49,6 +49,8 @@ export const LAYOUT = {
   maxFrameMs: 100,
   // Darstellung: Wie lange eine Trefferlinie sichtbar bleibt (nur Anzeige, keine Spielwirkung)
   shotDisplayMs: 150,
+  // Darstellung: Pause zwischen Spielende (eingefrorenes Spielfeld mit Ergebnis-Banner) und Ergebnisbildschirm
+  resultDelayMs: 1500,
 };
 
 // ---------------------------------------------------------------- TESTWERTE

@@ -6,6 +6,7 @@ import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
 import { isTurretFunctional, runCombat } from "../game/combat.ts";
 import { chooseTarget } from "../game/enemies.ts";
 import { updateRepair } from "../game/repair.ts";
+import { getRoundSummary } from "../game/stats.ts";
 import { spawnEnemies } from "../game/spawning.ts";
 import { damageTrainPart, damageTurret, getPartCondition } from "../game/train.ts";
 import { createWorld, stepWorld } from "../game/world.ts";
@@ -354,7 +355,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       damageTrainPart(world, "locomotive", 1000);
       damageTrainPart(world, "wagon", 1000);
-      check("REQ-TRN-003  Schritt 5 beendet die Runde nicht (Niederlagenlogik folgt in Schritt 9)", world.status === "running");
+      check("REQ-TRN-003  Die Schadensfunktionen allein beenden die Runde nicht (der Status wechselt erst in stepWorld)", world.status === "running");
     }
 
     // Zustände, die die Darstellung verwendet (getPartCondition)
@@ -402,6 +403,9 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     const totals: Record<Difficulty, number> = { gemuetlich: 25, normal: 40, winterhart: 60 };
     for (const d of Object.keys(totals) as Difficulty[]) {
       const world = fresh(d);
+      // Sehr robuste Zugteile: Die Runde soll hier nicht vorzeitig durch eine Niederlage enden.
+      world.locomotive.hp = world.locomotive.maxHp = 1e9;
+      world.wagon.hp = world.wagon.maxHp = 1e9;
       let followsPlan = true;
       let nothingEarly = true;
       for (let i = 0; i < 8000; i++) {
@@ -586,16 +590,16 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       check("REQ-ENM-006  Ein Gegner im Rechteck eines zerstörten Teils (in Reparatur) verursacht dort keinen Schaden und wählt neu", world.wagon.hp === 50 && world.stats.damageByPart.wagon === 0 && world.enemies[0].target === "locomotive");
     }
 
-    // 13: Statistik im Gesamtlauf ohne Verteidigung
+    // 13: Statistik im Gesamtlauf ohne Verteidigung: Die Runde endet mit der Niederlage, sobald beide Teile zerstört sind
     {
       const world = fresh("gemuetlich");
       run(world, 9000);
       const damage = world.stats.damageByPart.locomotive + world.stats.damageByPart.wagon;
       check(
-        "REQ-STA-001  Statistik im Gesamtlauf: 25 gespawnt, 20 erreicht, Schaden 200 = 10 je Ankunft, beide Teile zerstört",
-        world.stats.spawned === 25 && world.stats.reachedTrain === 20 && damage === 200 && world.locomotive.destroyed && world.wagon.destroyed && world.turret.destroyed,
+        "REQ-STA-001  Gesamtlauf ohne Verteidigung: Niederlage nach 20 Ankünften, Schaden 200 = 10 je Ankunft, beide Teile und das Geschütz zerstört",
+        world.status === "lost" && world.stats.result === "lost" && world.stats.reachedTrain === 20 && damage === 200 && world.locomotive.destroyed && world.wagon.destroyed && world.turret.destroyed,
       );
-      check("REQ-ENM-008  Gegner ohne Ziel bleiben übrig, ohne weiteren Schaden (5 Gegner, kein Ziel)", world.enemies.length === 5 && world.enemies.every((e) => e.target === null) && world.status === "running");
+      check("REQ-STA-001  Bei der Niederlage: gespawnt = erreicht + noch aktive Gegner (keine Kills ohne Verteidigung)", world.stats.spawned === world.stats.reachedTrain + world.enemies.length && world.stats.killsByPlayer + world.stats.killsByTurret === 0);
     }
 
     // 14: Spieler und Gegner behindern sich nicht
@@ -904,7 +908,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     const stepMs = CONFIRMED.repairStepMs;
     const fresh = (): World => {
       const world = createWorld("normal", makeTestRandom());
-      world.spawnPlan = []; // keine Gegner: reine Reparaturprüfung
+      world.spawnPlan = [{ atMs: 1e12, count: 1 }]; // praktisch keine Gegner (und kein vorzeitiger Sieg): reine Reparaturprüfung
       return world;
     };
     const intoZone = (world: World, part: "wagon" | "locomotive"): void => {
@@ -1141,6 +1145,227 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       for (let i = 0; i < 95; i++) stepWorld(world, { x: -1, y: 1 }, dt); // schräg nach links unten, etwa 1,6 s
       const inWagonZone = world.player.x >= world.wagon.zone.x && world.player.x <= world.wagon.zone.x + world.wagon.zone.w && world.player.y >= world.wagon.zone.y;
       check("REQ-PLR-003  Der Spieler erreicht die Reparaturzone durch Laufen und die Reparatur beginnt ohne Taste", inWagonZone && world.activeRepair === "wagon" && world.wagon.repairProgressMs > 0);
+    }
+  }
+
+  // --- Spielende: Sieg, Niederlage, Einfrieren, Zusammenfassung (REQ-WL-001 bis REQ-WL-005, REQ-STA-001)
+  {
+    const dt = LAYOUT.stepMs;
+    const idle: PlayerInput = { x: 0, y: 0 };
+    const fresh = (): World => createWorld("normal", makeTestRandom());
+    const noDefense = (world: World): World => {
+      world.player.attackCooldownMs = 1e15;
+      world.turret.attackCooldownMs = 1e15;
+      return world;
+    };
+    const withPlan = (world: World, plan: { atMs: number; count: number }[]): World => {
+      world.spawnPlan = plan;
+      return world;
+    };
+    const enemyEnd = (id: number, x: number, y: number, target: Enemy["target"], hp = 3): Enemy => ({ id, x, y, hp, target });
+    /** Läuft bis zum Spielende und zählt die Statuswechsel sowie die roundEnded-Ereignisse. */
+    const runToEnd = (world: World, maxSteps: number): { transitions: number; steps: number } => {
+      let transitions = 0;
+      let steps = 0;
+      while (steps < maxSteps) {
+        const before = world.status;
+        stepWorld(world, idle, dt);
+        steps++;
+        if (before === "running" && world.status !== "running") transitions++;
+        if (world.status !== "running") break;
+      }
+      return { transitions, steps };
+    };
+    const ended = (world: World): number => world.events.filter((e) => e.type === "roundEnded").length;
+
+    // Sieg
+    {
+      const world = withPlan(fresh(), [{ atMs: 1000, count: 2 }]);
+      const r = runToEnd(world, 3000);
+      const s = world.stats;
+      check("REQ-WL-003  Sieg nach Verarbeitung aller vorgesehenen Gegner bei intakten Zugteilen", world.status === "won" && s.result === "won" && s.spawned === 2 && world.enemies.length === 0 && (!world.locomotive.destroyed || !world.wagon.destroyed));
+      check("REQ-WL-003  Der Statuswechsel passiert genau einmal, mit genau einem Ereignis roundEnded", r.transitions === 1 && ended(world) === 1 && world.events.some((e) => e.type === "roundEnded" && e.result === "won"));
+    }
+    {
+      const world = withPlan(fresh(), [{ atMs: 500, count: 1 }]);
+      runToEnd(world, 3000);
+      check("REQ-WL-003  Ein besiegter Gegner zählt als verarbeitet (Sieg mit 1 Kill, ohne Zugtreffer)", world.status === "won" && world.stats.killsByPlayer + world.stats.killsByTurret === 1 && world.stats.reachedTrain === 0);
+    }
+    {
+      const world = noDefense(withPlan(fresh(), [{ atMs: 500, count: 1 }]));
+      runToEnd(world, 5000);
+      check(
+        "REQ-WL-003  Ein Gegner, der den Zug erreicht und verschwindet, zählt als verarbeitet (Sieg mit 1 Zugtreffer)",
+        world.status === "won" && world.stats.reachedTrain === 1 && world.stats.killsByPlayer + world.stats.killsByTurret === 0 && world.locomotive.hp + world.wagon.hp === 190,
+      );
+    }
+    {
+      // Sieg nicht zu früh und nicht zu spät: Invarianten über einen kompletten Lauf mit Verteidigung
+      const world = fresh();
+      let tooEarly = false;
+      let tooLate = false;
+      let wonAt = -1;
+      for (let i = 0; i < 12000; i++) {
+        stepWorld(world, idle, dt);
+        const allProcessed = world.nextSpawnIndex >= world.spawnPlan.length && world.enemies.length === 0;
+        const intact = !world.locomotive.destroyed || !world.wagon.destroyed;
+        if (world.status === "won" && !allProcessed) tooEarly = true;
+        if (world.status === "running" && allProcessed && intact) tooLate = true;
+        if (world.status !== "running") {
+          wonAt = world.timeMs;
+          break;
+        }
+      }
+      const lastSpawn = world.spawnPlan[world.spawnPlan.length - 1].atMs;
+      check("REQ-WL-003  Sieg tritt nie zu früh ein und kommt sofort, wenn alles verarbeitet ist (Lauf Normal mit Verteidigung)", !tooEarly && !tooLate && world.status === "won" && wonAt >= lastSpawn);
+      const s = world.stats;
+      check("REQ-STA-001  Bei Sieg gilt: gespawnt = Spieler-Kills + Geschütz-Kills + Zug erreicht", s.spawned === 40 && s.killsByPlayer + s.killsByTurret + s.reachedTrain === 40);
+    }
+    {
+      const pending = noDefense(withPlan(fresh(), [{ atMs: 50000, count: 1 }]));
+      for (let i = 0; i < 2400; i++) stepWorld(pending, idle, dt); // 40 s, noch kein Gegner gespawnt
+      check("REQ-WL-003  Kein Sieg, solange noch Gegner des Plans ausstehen (auch ohne aktive Gegner)", pending.status === "running" && pending.enemies.length === 0 && pending.nextSpawnIndex === 0);
+      const active = noDefense(withPlan(fresh(), [{ atMs: 500, count: 1 }]));
+      for (let i = 0; i < 600; i++) stepWorld(active, idle, dt); // 10 s, der Gegner läuft noch
+      check("REQ-WL-003  Kein Sieg, solange ein Gegner aktiv ist (Plan schon abgearbeitet)", active.status === "running" && active.enemies.length === 1 && active.nextSpawnIndex === 1);
+    }
+
+    // Niederlage
+    {
+      const world = fresh();
+      damageTrainPart(world, "locomotive", 1000);
+      stepWorld(world, idle, dt);
+      check("REQ-WL-002  Mit einem zerstörten Teil läuft die Runde weiter", world.status === "running" && ended(world) === 0);
+      damageTrainPart(world, "wagon", 1000);
+      stepWorld(world, idle, dt);
+      check("REQ-WL-002  Niederlage, sobald alle Zugteile zerstört sind (im nächsten Schritt, genau ein Ereignis)", world.status === "lost" && world.stats.result === "lost" && ended(world) === 1 && world.events.some((e) => e.type === "roundEnded" && e.result === "lost"));
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", 1000);
+      world.wagon.hp = 90; // in Reparatur: bleibt bis zum Abschluss zerstört
+      stepWorld(world, idle, dt);
+      damageTrainPart(world, "locomotive", 1000);
+      stepWorld(world, idle, dt);
+      check("REQ-WL-002  Ein zerstörter Wagon in Reparatur (90 HP) zählt noch als zerstört: Niederlage", world.status === "lost");
+    }
+    {
+      // Der letzte Gegner zerstört das letzte intakte Teil: Niederlage hat Vorrang vor dem Sieg
+      const world = noDefense(withPlan(fresh(), [{ atMs: 0, count: 1 }]));
+      world.nextSpawnIndex = 1; // alles gespawnt
+      damageTrainPart(world, "wagon", 1000);
+      world.locomotive.hp = 10;
+      world.enemies.push(enemyEnd(1, world.locomotive.rect.x + 100, world.locomotive.rect.y + 5, "locomotive"));
+      stepWorld(world, idle, dt);
+      check("REQ-WL-002  Zerstört der letzte Gegner das letzte intakte Teil, hat die Niederlage Vorrang vor dem Sieg", world.status === "lost" && world.enemies.length === 0 && world.stats.reachedTrain === 1 && ended(world) === 1);
+      const control = noDefense(withPlan(fresh(), [{ atMs: 0, count: 1 }]));
+      control.nextSpawnIndex = 1;
+      damageTrainPart(control, "wagon", 1000);
+      control.locomotive.hp = 20;
+      control.enemies.push(enemyEnd(1, control.locomotive.rect.x + 100, control.locomotive.rect.y + 5, "locomotive"));
+      stepWorld(control, idle, dt);
+      check("REQ-WL-003  Kontrollfall: Bleibt ein Teil intakt (Lokomotive 10 HP), gewinnt der letzte Treffer-Gegner die Runde", control.status === "won" && control.locomotive.hp === 10);
+    }
+    {
+      // Niederlage sofort: Im selben Schritt keine Angriffe und keine Reparatur mehr
+      const world = withPlan(fresh(), [{ atMs: 1e12, count: 1 }]);
+      damageTrainPart(world, "wagon", 1000);
+      world.locomotive.hp = 10;
+      world.player.x = world.locomotive.zone.x + 40;
+      world.player.y = world.locomotive.zone.y + 40;
+      const target = enemyEnd(2, world.player.x + 20, world.player.y, "locomotive");
+      world.enemies.push(enemyEnd(1, world.locomotive.rect.x + 100, world.locomotive.rect.y + 5, "locomotive"), target);
+      stepWorld(world, idle, dt);
+      check(
+        "REQ-WL-002  Niederlage sofort im selben Schritt: kein Spielerangriff, keine Reparatur, kein Schuss danach",
+        world.status === "lost" && target.hp === 3 && world.stats.killsByPlayer + world.stats.killsByTurret === 0 && world.activeRepair === null && world.locomotive.repairProgressMs === 0 && !world.events.some((e) => e.type === "shot"),
+      );
+    }
+
+    // Einfrieren nach Spielende
+    {
+      const world = withPlan(fresh(), [{ atMs: 1e12, count: 1 }]);
+      damageTrainPart(world, "wagon", 1000);
+      world.locomotive.hp = 10;
+      world.player.x = world.locomotive.zone.x + 40;
+      world.player.y = world.locomotive.zone.y + 40;
+      world.enemies.push(enemyEnd(1, world.locomotive.rect.x + 100, world.locomotive.rect.y + 5, "locomotive"), enemyEnd(2, world.player.x + 20, world.player.y, "locomotive"), enemyEnd(3, 300, 100, "locomotive"));
+      const r = runToEnd(world, 10);
+      const before = JSON.stringify(world);
+      const positions = world.enemies.map((e) => `${e.x},${e.y},${e.hp}`).join("|");
+      const stats = JSON.stringify(world.stats);
+      const timeMs = world.timeMs;
+      const partsBefore = JSON.stringify([world.locomotive, world.wagon, world.turret]);
+      const activeBefore = world.activeRepair;
+      for (let i = 0; i < 1200; i++) stepWorld(world, { x: 1, y: -1 }, dt);
+      check("REQ-WL-005   Nach Spielende bewegt sich kein Gegner mehr (Positionen und HP unverändert nach 20 s)", world.enemies.map((e) => `${e.x},${e.y},${e.hp}`).join("|") === positions && world.enemies.length === 2);
+      check("REQ-WL-005   Nach Spielende keine Angriffe, Reparaturen und Schäden (Zugteile, Geschütz, Gegner-HP, Reparaturstand unverändert)", JSON.stringify([world.locomotive, world.wagon, world.turret]) === partsBefore && world.enemies.every((e) => e.hp === 3) && world.activeRepair === activeBefore);
+      check("REQ-WL-005   Nach Spielende bleiben Statistik, Zeit und Spielerposition unverändert", JSON.stringify(world.stats) === stats && world.timeMs === timeMs && JSON.stringify(world) === before);
+      check("REQ-WL-005   Das Spielende wird genau einmal ausgelöst (ein Statuswechsel, ein Ereignis)", r.transitions === 1 && ended(world) === 1);
+    }
+    {
+      // Der Status bleibt auch bei nachträglichen Änderungen bestehen
+      const lost = withPlan(fresh(), [{ atMs: 1e12, count: 1 }]);
+      damageTrainPart(lost, "locomotive", 1000);
+      damageTrainPart(lost, "wagon", 1000);
+      runToEnd(lost, 5);
+      lost.enemies = [];
+      lost.nextSpawnIndex = lost.spawnPlan.length;
+      stepWorld(lost, idle, dt);
+      check("REQ-WL-005   Eine verlorene Runde wird nicht nachträglich zum Sieg (auch ohne Gegner und mit abgearbeitetem Plan)", lost.status === "lost" && ended(lost) === 1);
+      const won = withPlan(fresh(), [{ atMs: 500, count: 1 }]);
+      runToEnd(won, 3000);
+      damageTrainPart(won, "locomotive", 1000);
+      damageTrainPart(won, "wagon", 1000);
+      stepWorld(won, idle, dt);
+      check("REQ-WL-005   Eine gewonnene Runde wird nicht nachträglich zur Niederlage", won.status === "won" && ended(won) === 1);
+      won.enemies.push(enemyEnd(9, 480, 640, "wagon"));
+      const snap = JSON.stringify(won.stats);
+      for (let i = 0; i < 100; i++) stepWorld(won, idle, dt);
+      check("REQ-WL-005   Ein nach Spielende hinzugekommener Gegner hat keinen Einfluss auf Ergebnis und Statistik", JSON.stringify(won.stats) === snap && won.status === "won");
+    }
+
+    // Zusammenfassung für den Ergebnisbildschirm
+    {
+      const world = noDefense(withPlan(fresh(), [{ atMs: 500, count: 1 }]));
+      runToEnd(world, 5000);
+      const s = getRoundSummary(world);
+      check(
+        "REQ-STA-001  Zusammenfassung nach Sieg mit Zugtreffer: Ergebnis, Schwierigkeit, Dauer, gespawnt 1 von 1, erreicht 1, Schaden 10, keine Kills, keine Reparatur",
+        s.result === "won" && s.difficulty === "normal" && s.durationMs === world.timeMs && s.durationMs > 15000 && s.plannedEnemies === 1 && s.spawned === 1 && s.reachedTrain === 1 && s.defeatedByPlayer === 0 && s.defeatedByTurret === 0 && s.damageLocomotive + s.damageWagon === 10 && s.repairMsLocomotive === 0 && s.repairMsWagon === 0,
+      );
+      const kills = withPlan(fresh(), [{ atMs: 500, count: 3 }]);
+      runToEnd(kills, 5000);
+      const k = getRoundSummary(kills);
+      check("REQ-STA-001  Zusammenfassung mit Kills: Summe der besiegten und erreichten Gegner = gespawnt = 3", k.spawned === 3 && k.defeatedByPlayer + k.defeatedByTurret + k.reachedTrain === 3 && k.defeatedByTurret >= 1 && k.result === "won");
+      const rep = withPlan(fresh(), [{ atMs: 1e12, count: 1 }]);
+      rep.wagon.hp = 50;
+      rep.player.x = rep.wagon.zone.x + 50;
+      rep.player.y = rep.wagon.zone.y + 50;
+      for (let i = 0; i < 360; i++) stepWorld(rep, idle, dt); // 6 s
+      const r = getRoundSummary(rep);
+      check("REQ-STA-001  Zusammenfassung der Reparaturzeit je Zugteil (6 s am Wagon, 0 an der Lokomotive)", Math.abs(r.repairMsWagon - 6000) < 20 && r.repairMsLocomotive === 0 && r.result === "running");
+      const lostWorld = withPlan(fresh(), [{ atMs: 1e12, count: 1 }]);
+      damageTrainPart(lostWorld, "locomotive", 1000);
+      damageTrainPart(lostWorld, "wagon", 1000);
+      stepWorld(lostWorld, idle, dt);
+      const l = getRoundSummary(lostWorld);
+      check("REQ-STA-001  Zusammenfassung nach Niederlage: Ergebnis lost, Schaden je Teil 100 und 100 (angewendeter Schaden)", l.result === "lost" && l.damageLocomotive === 100 && l.damageWagon === 100);
+    }
+
+    // Neustart
+    {
+      const old = noDefense(withPlan(fresh(), [{ atMs: 500, count: 1 }]));
+      runToEnd(old, 5000);
+      old.player.x = 100;
+      const again = createWorld("normal", makeTestRandom());
+      const pristine = createWorld("normal", makeTestRandom());
+      check(
+        "REQ-WL-004  Neustart erzeugt eine vollständig frische Runde (gleicher Zustand wie die erste Runde, alle Werte zurückgesetzt)",
+        JSON.stringify(again) === JSON.stringify(pristine) && again.status === "running" && again.timeMs === 0 && again.enemies.length === 0 && again.nextSpawnIndex === 0 && again.stats.spawned === 0 && again.stats.reachedTrain === 0 && again.locomotive.hp === 100 && again.wagon.hp === 100 && again.turret.hp === 20 && again.spawnPlan.length === 20,
+      );
+      check("REQ-WL-004  Die alte Runde beeinflusst die neue nicht (keine gemeinsamen Objekte)", old.status === "won" && again.player.x === LAYOUT.playerStart.x && again.spawnPlan !== old.spawnPlan && again.stats !== old.stats);
+      check("REQ-DIF-001  Jeder der drei Schwierigkeitsgrade startet eine laufende Runde mit dem gewählten Profil", (["gemuetlich", "normal", "winterhart"] as const).every((d) => createWorld(d).difficulty === d && createWorld(d).status === "running"));
     }
   }
 
