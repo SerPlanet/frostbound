@@ -105,6 +105,8 @@ export interface World {
   nextEnemyId: number;
   stats: Stats;
   events: GameEvent[];
+  /** Das Zugteil, das in diesem Schritt repariert wurde (nur eines gleichzeitig), sonst null. */
+  activeRepair: PartId | null;
   /** Austauschbare Zufallsfunktion, Werte in [0, 1) (TECH-15). Kein Seed-System. */
   random: () => number;
 }

@@ -15,6 +15,7 @@
 - CONFIRMED: Die Lokomotive hat im Prototyp keine Zusatzfunktion (D-041).
 - CONFIRMED: Gegner verursachen am Zugziel 10 Schaden (D-052). Zerstörte Zugteile sind keine gültigen Ziele (D-039).
 - CONFIRMED: Spätere Geschütze auf der Lokomotive, weitere Waggons und Upgrades sind nicht Teil des Prototyps (D-054, D-059).
+- CONFIRMED **Zugausrichtung** (D-061, gilt für das gesamte Spiel, auch für die grafische Gestaltung): Der Zug fährt immer von links nach rechts. Die Lokomotive steht immer ganz rechts, ihre Front zeigt nach rechts (Fahrtrichtung). Alle Wagen stehen links von der Lokomotive. Weitere Wagen werden später links ergänzt.
 
 ## Offen
 
@@ -66,3 +67,12 @@ Keine Gameplay-Fragen. Eine separate Geschützreparatur ist für den Prototyp ni
 - **Testfälle:** auto: Wagon auf 10 HP → Geschütz feuert. Wagon 0 → Geschütz feuert nicht. Reparatur bei 95 → Geschütz funktionslos. Reparatur bei 100 → Geschütz funktionsfähig, 20/20.
 - **Abhängigkeiten:** repair-system (REQ-REP-005), combat (REQ-CMB-002).
 - **Entscheidungsstatus:** CONFIRMED (D-054, D-055, D-041).
+
+### REQ-TRN-006 – Zugausrichtung und Reihenfolge der Zugteile
+- **Problemstellung:** Die Anordnung des Zuges ist eine verbindliche Gestaltungsregel und darf nicht als zufällige Platzierung der Platzhalter gelten.
+- **Ziel:** Der Zug fährt von links nach rechts, die Lokomotive führt.
+- **Gewünschtes Verhalten:** Die Lokomotive steht ganz rechts am Zug, ihre Front zeigt nach rechts (Fahrtrichtung). Alle Wagen stehen links von ihr. Das Geschütz sitzt auf dem Wagon und damit links von der Lokomotive. Reparaturzonen liegen über ihrem Teil. Die Darstellung kennzeichnet die Front der Lokomotive eindeutig (in der Greybox: dunkler Frontblock mit Pfeil nach rechts).
+- **Akzeptanzkriterien:** (1) Die Ausrichtung ist in der Konfiguration festgelegt („rechts“) und wird von der Darstellung gelesen. (2) Die Lokomotive hat die größte x-Position aller Zugteile und liegt am rechten Ende des Zuges. (3) Der Wagon liegt links von der Lokomotive, das Geschütz auf dem Wagon. (4) Die Front der Lokomotive wird rechts dargestellt. (5) Schadenszuordnung, HP-Anzeigen, Geschütz und Reparaturzonen folgen den Teilen (die Zuordnung hängt am Rechteck des Teils, nicht an seiner Position im Zug). (6) Spätere Wagen kämen links hinzu. Das wird im Prototyp nicht vorbereitet.
+- **Testfälle:** auto: Ausrichtung „rechts“, Lokomotive ganz rechts, Wagon links, Geschütz auf dem Wagon, Zonen über den Teilen, Schadenszuordnung links/rechts, Gegner laufen zu ihrem Ziel auf der richtigen Seite. manuell: Greybox ansehen, Front und Pfeil der Lokomotive zeigen nach rechts.
+- **Abhängigkeiten:** REQ-TRN-001, REQ-REP-002, architecture (TECH-08).
+- **Entscheidungsstatus:** CONFIRMED (D-061).

@@ -26,13 +26,17 @@ export const LAYOUT = {
   field: { width: 1280, height: 720 },
   // TECH-08: Zugbereich ab dieser y-Position, für den Spieler gesperrt
   trainTopY: 620,
-  locomotiveRect: { x: 340, y: 620, w: 280, h: 80 },
-  wagonRect: { x: 660, y: 620, w: 280, h: 80 },
+  // Zugausrichtung (CONFIRMED, D-061, gilt für das gesamte Spiel): Der Zug fährt von links nach
+  // rechts. Die Lokomotive steht ganz rechts, ihre Front zeigt nach rechts (Fahrtrichtung).
+  // Alle Wagen stehen links von der Lokomotive, weitere Wagen kämen links dazu.
+  trainFacing: "right" as "left" | "right",
+  wagonRect: { x: 340, y: 620, w: 280, h: 80 },
+  locomotiveRect: { x: 660, y: 620, w: 280, h: 80 },
   // Geschütz auf der Wagon-Mitte
-  turretPos: { x: 800, y: 640 },
+  turretPos: { x: 480, y: 640 },
   // TECH-09: Reparaturzonen direkt über den Teilen, nicht überlappend
-  locomotiveZone: { x: 340, y: 500, w: 280, h: 120 },
-  wagonZone: { x: 660, y: 500, w: 280, h: 120 },
+  wagonZone: { x: 340, y: 500, w: 280, h: 120 },
+  locomotiveZone: { x: 660, y: 500, w: 280, h: 120 },
   playerStart: { x: 640, y: 360 },
   playerRadius: 14,
   // TECH-10: Gegner-Spawn oberhalb des Spielfeldes

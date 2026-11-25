@@ -3,8 +3,9 @@
 // Importiert nur game/ und config.ts, keine Browser-APIs, kein Phaser.
 
 import { CONFIRMED, LAYOUT, TESTWERTE } from "../config.ts";
-import { runCombat } from "../game/combat.ts";
+import { isTurretFunctional, runCombat } from "../game/combat.ts";
 import { chooseTarget } from "../game/enemies.ts";
+import { updateRepair } from "../game/repair.ts";
 import { spawnEnemies } from "../game/spawning.ts";
 import { damageTrainPart, damageTurret, getPartCondition } from "../game/train.ts";
 import { createWorld, stepWorld } from "../game/world.ts";
@@ -515,18 +516,18 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     // 8: Zielwechsel bei Zerstörung
     {
       const world = fresh();
-      world.enemies.push(enemy(1, 800, 300, "wagon"), enemy(2, 300, 300, "locomotive"));
+      world.enemies.push(enemy(1, 480, 300, "wagon"), enemy(2, 1000, 300, "locomotive"));
       damageTrainPart(world, "wagon", 1000);
       const before = { x: world.enemies[0].x, y: world.enemies[0].y };
       run(world, 1);
       const e = world.enemies[0];
       check("REQ-ENM-008  Wird das Ziel zerstört, wählt der Gegner im selben Schritt ein neues intaktes Ziel", e.target === "locomotive" && world.enemies[1].target === "locomotive");
-      check("REQ-ENM-008  Die Bewegung geht von der aktuellen Position zum neuen Ziel weiter", near(Math.hypot(e.x - before.x, e.y - before.y), speedStep) && e.x < before.x);
+      check("REQ-ENM-008  Die Bewegung geht von der aktuellen Position zum neuen Ziel weiter", near(Math.hypot(e.x - before.x, e.y - before.y), speedStep) && e.x > before.x);
     }
     {
       const world = fresh();
       world.wagon.hp = 10;
-      world.enemies.push(enemy(1, 800, 300, "wagon"), enemy(2, 800, 640, "wagon"));
+      world.enemies.push(enemy(1, 480, 300, "wagon"), enemy(2, 480, 640, "wagon"));
       run(world, 1);
       check(
         "REQ-ENM-008  Zerstört ein Gegner das Ziel eines anderen, wechselt dieser im selben Schritt (auch bei späterer Listenposition)",
@@ -535,7 +536,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
     {
       const world = fresh();
-      world.enemies.push(enemy(1, 800, 300, "wagon"));
+      world.enemies.push(enemy(1, 480, 300, "wagon"));
       damageTrainPart(world, "wagon", 1000);
       damageTrainPart(world, "locomotive", 1000);
       const before = { x: world.enemies[0].x, y: world.enemies[0].y };
@@ -564,7 +565,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
     {
       const world = fresh();
-      world.enemies.push(enemy(1, 800, 625, "wagon"));
+      world.enemies.push(enemy(1, 480, 625, "wagon"));
       run(world, 1);
       check("REQ-ENM-003  Das Ereignis enemyReachedTrain wird erzeugt", world.events.some((e) => e.type === "enemyReachedTrain" && e.enemyId === 1 && e.part === "wagon"));
       run(world, 300);
@@ -572,7 +573,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
     {
       const world = fresh();
-      world.enemies.push(enemy(1, 800, 625, "wagon"), enemy(2, 820, 625, "wagon"), enemy(3, 400, 625, "locomotive"));
+      world.enemies.push(enemy(1, 480, 625, "wagon"), enemy(2, 500, 625, "wagon"), enemy(3, 800, 625, "locomotive"));
       run(world, 1);
       check("REQ-ENM-003  Jeder Gegner verursacht genau einmal 10 Schaden (2 am Wagon: 80, 1 an der Lokomotive: 90)", world.wagon.hp === 80 && world.locomotive.hp === 90 && world.stats.reachedTrain === 3 && world.enemies.length === 0);
     }
@@ -580,7 +581,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
       const world = fresh();
       world.wagon.hp = 50;
       world.wagon.destroyed = true;
-      world.enemies.push(enemy(1, 800, 650, "wagon"));
+      world.enemies.push(enemy(1, 480, 650, "wagon"));
       run(world, 1);
       check("REQ-ENM-006  Ein Gegner im Rechteck eines zerstörten Teils (in Reparatur) verursacht dort keinen Schaden und wählt neu", world.wagon.hp === 50 && world.stats.damageByPart.wagon === 0 && world.enemies[0].target === "locomotive");
     }
@@ -803,7 +804,7 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
     {
       const world = turretOnly();
-      world.enemies.push(enemyAt(1, 800, 600, 1));
+      world.enemies.push(enemyAt(1, 480, 600, 1));
       for (let i = 0; i < 100; i++) stepWorld(world, { x: 0, y: 0 }, dt);
       check("REQ-CMB-005  Ein besiegter Gegner richtet keinen Zugschaden an", world.wagon.hp === 100 && world.locomotive.hp === 100 && world.stats.reachedTrain === 0 && world.stats.killsByTurret === 1);
     }
@@ -868,13 +869,288 @@ export function runSelfTest(output?: (line: string) => void): { passed: number; 
     }
   }
 
+  // --- Zugausrichtung (D-061)
+  {
+    const world = createWorld("normal", makeTestRandom());
+    const loco = world.locomotive.rect;
+    const wagon = world.wagon.rect;
+    check("REQ-TRN-006  Der Zug fährt von links nach rechts: Front zeigt nach rechts (Konfiguration)", LAYOUT.trainFacing === "right");
+    check("REQ-TRN-006  Die Lokomotive steht ganz rechts, alle Wagen links von ihr", loco.x >= wagon.x + wagon.w && loco.x > wagon.x && loco.x + loco.w <= LAYOUT.field.width);
+    check("REQ-TRN-006  Das Geschütz sitzt auf dem Wagon und damit links von der Lokomotive", inside(world.turret.x, world.turret.y, wagon) && world.turret.x < loco.x);
+    check(
+      "REQ-TRN-006  Reparaturzonen liegen über ihrem Teil (Wagon links, Lokomotive rechts)",
+      world.wagon.zone.x === wagon.x && world.wagon.zone.w === wagon.w && world.locomotive.zone.x === loco.x && world.locomotive.zone.w === loco.w && world.wagon.zone.x < world.locomotive.zone.x && world.wagon.zone.y + world.wagon.zone.h === LAYOUT.trainTopY,
+    );
+    // Schadenszuordnung folgt dem Rechteck des Zielteils
+    const hitWagon = createWorld("normal", makeTestRandom());
+    hitWagon.player.attackCooldownMs = hitWagon.turret.attackCooldownMs = 1e15;
+    hitWagon.enemies.push({ id: 1, x: wagon.x + wagon.w / 2, y: wagon.y + 5, hp: 3, target: "wagon" });
+    stepWorld(hitWagon, { x: 0, y: 0 }, LAYOUT.stepMs);
+    const hitLoco = createWorld("normal", makeTestRandom());
+    hitLoco.player.attackCooldownMs = hitLoco.turret.attackCooldownMs = 1e15;
+    hitLoco.enemies.push({ id: 1, x: loco.x + loco.w / 2, y: loco.y + 5, hp: 3, target: "locomotive" });
+    stepWorld(hitLoco, { x: 0, y: 0 }, LAYOUT.stepMs);
+    check("REQ-TRN-006  Schadenszuordnung: ein Gegner am linken Teil trifft den Wagon, am rechten Teil die Lokomotive", hitWagon.wagon.hp === 90 && hitWagon.locomotive.hp === 100 && hitLoco.locomotive.hp === 90 && hitLoco.wagon.hp === 100);
+    const toLoco = createWorld("normal", makeTestRandom());
+    toLoco.player.attackCooldownMs = toLoco.turret.attackCooldownMs = 1e15;
+    toLoco.enemies.push({ id: 1, x: 640, y: 300, hp: 3, target: "locomotive" }, { id: 2, x: 640, y: 300, hp: 3, target: "wagon" });
+    stepWorld(toLoco, { x: 0, y: 0 }, LAYOUT.stepMs);
+    check("REQ-TRN-006  Gegner mit Ziel Lokomotive laufen nach rechts, mit Ziel Wagon nach links", toLoco.enemies[0].x > 640 && toLoco.enemies[1].x < 640);
+  }
+
+  // --- Reparatur (REQ-REP-001 bis REQ-REP-006, REQ-PLR-003)
+  {
+    const dt = LAYOUT.stepMs;
+    const stepMs = CONFIRMED.repairStepMs;
+    const fresh = (): World => {
+      const world = createWorld("normal", makeTestRandom());
+      world.spawnPlan = []; // keine Gegner: reine Reparaturprüfung
+      return world;
+    };
+    const intoZone = (world: World, part: "wagon" | "locomotive"): void => {
+      const z = world[part].zone;
+      world.player.x = z.x + z.w / 2;
+      world.player.y = z.y + 50;
+    };
+    const outOfZones = (world: World): void => {
+      world.player.x = 640;
+      world.player.y = 300;
+    };
+    const rep = (world: World, ms: number, step: number = dt): void => {
+      for (let t = 0; t < ms - 1e-9; t += step) updateRepair(world, step);
+    };
+
+    // Beginn innerhalb der Zone, nicht außerhalb
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      intoZone(world, "wagon");
+      rep(world, 4900);
+      const before = world.wagon.hp;
+      rep(world, 200);
+      check("REQ-REP-003  Reparatur beginnt in der Zone: nach 4,9 s noch keine HP, nach 5,1 s genau +5", before === 50 && world.wagon.hp === 55 && world.activeRepair === "wagon");
+    }
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      world.locomotive.hp = 50;
+      outOfZones(world);
+      rep(world, 30000);
+      check("REQ-REP-003  Außerhalb der Zonen findet keine Reparatur statt", world.wagon.hp === 50 && world.locomotive.hp === 50 && world.wagon.repairProgressMs === 0 && world.activeRepair === null && world.stats.repairMsByPart.wagon === 0);
+    }
+    {
+      const world = fresh();
+      intoZone(world, "wagon");
+      rep(world, 20000);
+      check("REQ-REP-002  Ein vollständig intaktes Teil wird nicht repariert (kein Fortschritt, keine aktive Reparatur)", world.wagon.hp === 100 && world.wagon.repairProgressMs === 0 && world.activeRepair === null);
+    }
+
+    // Pause und Fortsetzen
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      intoZone(world, "wagon");
+      rep(world, 3000);
+      const progress = world.wagon.repairProgressMs;
+      outOfZones(world);
+      rep(world, 10000);
+      check("REQ-REP-003  Verlassen der Zone pausiert: Fortschritt bleibt exakt erhalten, keine HP", world.wagon.repairProgressMs === progress && world.wagon.hp === 50 && progress > 2900 && progress < 3100 && world.activeRepair === null);
+      intoZone(world, "wagon");
+      rep(world, 1900);
+      const mid = world.wagon.hp;
+      rep(world, 200);
+      check("REQ-REP-003  Wiedereintritt setzt fort: nach insgesamt 5 s Anwesenheit (3 s + 2 s) +5 HP", mid === 50 && world.wagon.hp === 55);
+      // Innerhalb der Zone frei bewegen
+      world.player.x = world.wagon.zone.x + 5;
+      world.player.y = world.wagon.zone.y + 5;
+      const p1 = world.wagon.repairProgressMs;
+      rep(world, 1000);
+      world.player.x = world.wagon.zone.x + world.wagon.zone.w - 5;
+      rep(world, 1000);
+      check("REQ-REP-003  Bewegung innerhalb der Zone unterbricht die Reparatur nicht", world.wagon.repairProgressMs > p1 + 1900);
+    }
+
+    // Rate: 5 HP alle 5 s, bildratenunabhängig
+    {
+      const world = fresh();
+      world.wagon.hp = 0;
+      world.wagon.destroyed = true;
+      intoZone(world, "wagon");
+      const gains: number[] = [];
+      let t = 0;
+      let last = world.wagon.hp;
+      let steps = 0;
+      while (world.wagon.destroyed && steps < 20000) {
+        updateRepair(world, dt);
+        t += dt;
+        steps++;
+        if (world.wagon.hp !== last) {
+          gains.push(world.wagon.hp - last);
+          last = world.wagon.hp;
+        }
+      }
+      check("REQ-REP-003  Genau 5 HP je Reparaturschritt (20 Schritte von 0 auf 100)", gains.length === 20 && gains.every((g) => g === 5));
+      check("REQ-REP-003  Eine vollständige Reparatur von 0 auf 100 HP dauert 100 Sekunden", Math.abs(t - 100000) <= dt + 1e-6);
+    }
+    {
+      const counts: number[] = [];
+      for (const step of [1000 / 120, 1000 / 60, 1000 / 30]) {
+        const world = fresh();
+        world.wagon.hp = 20;
+        intoZone(world, "wagon");
+        rep(world, 50000, step);
+        counts.push(world.wagon.hp);
+      }
+      check("REQ-REP-003  Reparaturfortschritt ist bildratenunabhängig (nach 50 s bei 120, 60, 30 Schritten/s: je 20 + 50 = 70 HP)", counts.every((c) => c === 70));
+      const big = fresh();
+      big.wagon.hp = 50;
+      intoZone(big, "wagon");
+      updateRepair(big, 12000);
+      check("REQ-REP-003  Ein sehr großer Zeitschritt (12 s) liefert 2 Schritte (+10 HP) und behält 2 s Rest", big.wagon.hp === 60 && Math.abs(big.wagon.repairProgressMs - 2000) < 1e-6);
+    }
+
+    // Nur ein Teil gleichzeitig
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      world.locomotive.hp = 50;
+      intoZone(world, "wagon");
+      rep(world, 10000);
+      check("REQ-REP-004  Es wird nur das Teil in der Zone des Spielers repariert (Wagon 60, Lokomotive unverändert)", world.wagon.hp === 60 && world.locomotive.hp === 50 && world.locomotive.repairProgressMs === 0);
+      intoZone(world, "locomotive");
+      rep(world, 5100);
+      check("REQ-REP-004  Wechsel in die andere Zone: nun nur die Lokomotive (60), der Wagon behält seinen Stand", world.locomotive.hp === 55 && world.wagon.hp === 60);
+    }
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      world.locomotive.hp = 50;
+      world.locomotive.zone = { ...world.wagon.zone }; // künstlich überlappende Zonen (Prototyp-Konfiguration hat keine)
+      intoZone(world, "wagon");
+      let bothGrew = false;
+      for (let i = 0; i < 2000; i++) {
+        const w0 = world.wagon.repairProgressMs + world.wagon.hp;
+        const l0 = world.locomotive.repairProgressMs + world.locomotive.hp;
+        updateRepair(world, dt);
+        if (world.wagon.repairProgressMs + world.wagon.hp > w0 && world.locomotive.repairProgressMs + world.locomotive.hp > l0) bothGrew = true;
+      }
+      check("REQ-REP-004  Bei überlappenden Zonen wird nie mehr als ein Teil gleichzeitig repariert (Reihenfolge Wagon, Lokomotive)", !bothGrew && world.wagon.hp > 50 && world.locomotive.hp === 50);
+    }
+
+    // Zerstört bleibt zerstört, Abschluss
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", 1000);
+      world.events.length = 0;
+      intoZone(world, "wagon");
+      rep(world, 50000);
+      check("REQ-REP-005  Ein zerstörter Wagon bleibt bei halber Reparatur (50 HP) zerstört, ebenso das Geschütz, ohne Ereignis partRepaired", world.wagon.hp === 50 && world.wagon.destroyed && world.turret.destroyed && world.turret.hp === 0 && !world.events.some((e) => e.type === "partRepaired"));
+      let picksWagon = false;
+      for (let i = 0; i < 100; i++) if (chooseTarget(world) === "wagon") picksWagon = true;
+      check("REQ-REP-006  Ein zerstörter Wagon in Reparatur ist kein gültiges Gegnerziel", !picksWagon && !isTurretFunctional(world));
+      rep(world, 49000);
+      check("REQ-REP-005  Kurz vor dem Abschluss (nach 99 s: 95 HP) ist der Wagon noch zerstört", world.wagon.hp === 95 && world.wagon.destroyed);
+      rep(world, 6000);
+      check("REQ-REP-005  Mit dem vollständigen Abschluss (100 HP) ist der Wagon wieder intakt und betriebsbereit", world.wagon.hp === 100 && !world.wagon.destroyed && getPartCondition(world.wagon) === "intact" && world.events.some((e) => e.type === "partRepaired" && e.part === "wagon"));
+      let picksAgain = false;
+      for (let i = 0; i < 200; i++) if (chooseTarget(world) === "wagon") picksAgain = true;
+      check("REQ-REP-006  Der vollständig reparierte Wagon ist wieder ein gültiges Gegnerziel", picksAgain);
+      check("REQ-REP-005  Nach dem Abschluss ist die Reparatur beendet (Zähler 0, keine aktive Reparatur nach dem nächsten Schritt)", world.wagon.repairProgressMs === 0 && (updateRepair(world, dt), world.activeRepair === null));
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "locomotive", 1000);
+      intoZone(world, "locomotive");
+      rep(world, 100000 + 100);
+      check("REQ-REP-005  Auch die Lokomotive wird nach 100 s wieder intakt (ohne Zusatzwirkung auf Wagon und Geschütz)", world.locomotive.hp === 100 && !world.locomotive.destroyed && world.wagon.hp === 100 && !world.turret.destroyed && world.turret.hp === 20);
+    }
+
+    // Wagon und Geschütz
+    {
+      const world = fresh();
+      world.turret.hp = 3; // früherer Zustand irrelevant
+      damageTrainPart(world, "wagon", 1000);
+      intoZone(world, "wagon");
+      rep(world, 100000 + 100);
+      check("REQ-REP-005  Die Reparatur des zerstörten Wagons stellt das Geschütz vollständig wieder her (20/20) und aktiviert es", world.wagon.hp === 100 && world.turret.hp === 20 && !world.turret.destroyed && isTurretFunctional(world));
+      const enemy1: Enemy = { id: 1, x: 900, y: 300, hp: 3, target: "wagon" };
+      world.enemies.push(enemy1);
+      world.player.attackCooldownMs = 1e15;
+      runCombat(world, dt);
+      check("REQ-REP-005  Das wiederhergestellte Geschütz greift sofort wieder an", enemy1.hp === 2);
+    }
+    {
+      const world = fresh();
+      damageTurret(world, 5);
+      damageTrainPart(world, "wagon", 40);
+      intoZone(world, "wagon");
+      rep(world, 40000);
+      check("REQ-REP-005  Ein nur beschädigter Wagon bleibt vom Geschütz unabhängig: Reparatur des Wagons ändert das Geschütz nicht", world.wagon.hp === 100 && world.turret.hp === 15 && !world.turret.destroyed);
+    }
+    {
+      const world = fresh();
+      damageTrainPart(world, "wagon", 1000);
+      damageTrainPart(world, "locomotive", 50);
+      intoZone(world, "locomotive");
+      rep(world, 50000);
+      check("REQ-REP-005  Die Reparatur der Lokomotive stellt das Geschütz nicht her (nur die Wagon-Reparatur)", world.locomotive.hp === 100 && world.wagon.destroyed && world.turret.destroyed);
+    }
+
+    // Kostenlos, Statistik
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      intoZone(world, "wagon");
+      rep(world, 10000);
+      check("REQ-REP-001  Reparatur ist kostenlos: kein Ressourcenzustand vorhanden oder nötig", !("resources" in world) && world.wagon.hp === 60);
+      check("REQ-STA-001  Reparaturzeit wird je Zugteil als aktive Reparaturzeit erfasst (10 s am Wagon, 0 an der Lokomotive)", Math.abs(world.stats.repairMsByPart.wagon - 10000) < 20 && world.stats.repairMsByPart.locomotive === 0);
+    }
+
+    // Integration über stepWorld: Spielerangriff läuft während der Reparatur
+    {
+      const world = fresh();
+      world.wagon.hp = 50;
+      intoZone(world, "wagon");
+      // Der Gegner steht 85 LE über dem Spieler (in Reichweite) und läuft zum Wagon, wird aber nach 3 Schüssen besiegt, bevor er ankommt.
+      const target: Enemy = { id: 1, x: world.player.x + 30, y: world.player.y - 80, hp: 3, target: "wagon" };
+      world.enemies.push(target);
+      world.turret.destroyed = true; // nur der Spieler kann schießen
+      stepWorld(world, { x: 0, y: 0 }, dt);
+      check(
+        "REQ-REP-003  Der Spieler greift während der Reparatur weiterhin automatisch an (Treffer und Reparaturfortschritt im selben Schritt)",
+        target.hp === 2 && world.events.some((e) => e.type === "shot" && e.source === "player") && world.activeRepair === "wagon" && world.wagon.repairProgressMs > 0,
+      );
+      for (let i = 0; i < 400; i++) stepWorld(world, { x: 0, y: 0 }, dt);
+      check("REQ-REP-003  Über stepWorld: Fortschritt und Kills laufen gleichzeitig (Wagon +5 HP nach 5 s, Gegner besiegt)", world.wagon.hp >= 55 && world.stats.killsByPlayer === 1);
+    }
+    for (const status of ["won", "lost"] as const) {
+      const world = fresh();
+      world.status = status;
+      world.wagon.hp = 50;
+      intoZone(world, "wagon");
+      const before = JSON.stringify(world);
+      for (let i = 0; i < 600; i++) stepWorld(world, { x: 0, y: 0 }, dt);
+      check(`REQ-WL-005   Nach Spielende wird nicht mehr repariert (${status})`, JSON.stringify(world) === before && world.wagon.hp === 50);
+    }
+    {
+      // Bewegung des Spielers (Schritt 4) führt in die Zone: Der Spieler kann beide Zonen erreichen.
+      const world = fresh();
+      world.wagon.hp = 50;
+      world.player.x = 640;
+      world.player.y = 360;
+      for (let i = 0; i < 95; i++) stepWorld(world, { x: -1, y: 1 }, dt); // schräg nach links unten, etwa 1,6 s
+      const inWagonZone = world.player.x >= world.wagon.zone.x && world.player.x <= world.wagon.zone.x + world.wagon.zone.w && world.player.y >= world.wagon.zone.y;
+      check("REQ-PLR-003  Der Spieler erreicht die Reparaturzone durch Laufen und die Reparatur beginnt ohne Taste", inWagonZone && world.activeRepair === "wagon" && world.wagon.repairProgressMs > 0);
+    }
+  }
+
   // --- Konfiguration (REQ-ARC-004)
   check("REQ-ARC-004  Zwei Welten teilen keine Objekte der Konfiguration", (() => {
     const a = createWorld("normal");
     const b = createWorld("normal");
     a.wagon.hp = 1;
     a.wagon.rect.x = 0;
-    return b.wagon.hp === 100 && b.wagon.rect.x === LAYOUT.wagonRect.x && LAYOUT.wagonRect.x === 660;
+    return b.wagon.hp === 100 && b.wagon.rect.x === LAYOUT.wagonRect.x && LAYOUT.wagonRect.x === 340;
   })());
 
   log("");

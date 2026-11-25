@@ -3,14 +3,17 @@
 // Ausschließlich Phaser Graphics und Text, keine Bilddateien (REQ-ARC-003, REQ-TST-002).
 
 import Phaser from "phaser";
-import { LAYOUT } from "../config.ts";
+import { CONFIRMED, LAYOUT } from "../config.ts";
 import { getPartCondition } from "../game/train.ts";
-import type { GameEvent, Rect, TrainPart, World } from "../game/types.ts";
+import type { GameEvent, TrainPart, World } from "../game/types.ts";
 
 export interface DrawOptions {
   /** Nur für den Visuals-Test: alle Reparaturzonen zeigen, auch wenn nichts repariert werden muss. */
   forceZones?: boolean;
 }
+
+/** Breite des Frontblocks der Lokomotive (nur Darstellung). */
+const FRONT_WIDTH = 80;
 
 const COLOR = {
   playArea: 0x0f2236,
@@ -85,7 +88,7 @@ export class WorldView {
     for (const part of [world.locomotive, world.wagon]) {
       const visible = options.forceZones === true || isRepairable(part);
       this.zoneLabels[part.id].setVisible(visible);
-      if (visible) this.drawZone(part.zone, part.id);
+      if (visible) this.drawZone(part, world.activeRepair === part.id);
     }
 
     this.drawPart(world.locomotive);
@@ -123,13 +126,21 @@ export class WorldView {
     this.shots = [];
   }
 
-  private drawZone(zone: Rect, id: "locomotive" | "wagon"): void {
+  /** Reparaturzone: die gerade repariert werdende Zone ist hervorgehoben, unten zeigt eine Leiste den Fortschritt zum nächsten Reparaturschritt. */
+  private drawZone(part: TrainPart, active: boolean): void {
     const g = this.g;
-    g.fillStyle(COLOR.zone, 0.22);
+    const zone = part.zone;
+    g.fillStyle(COLOR.zone, active ? 0.38 : 0.22);
     g.fillRect(zone.x, zone.y, zone.w, zone.h);
-    g.lineStyle(3, COLOR.zone, 0.95);
+    g.lineStyle(active ? 5 : 3, active ? COLOR.shotPlayer : COLOR.zone, 0.95);
     g.strokeRect(zone.x, zone.y, zone.w, zone.h);
-    this.zoneLabels[id].setPosition(zone.x + zone.w / 2, zone.y + zone.h / 2);
+
+    const progress = Math.min(1, part.repairProgressMs / CONFIRMED.repairStepMs);
+    g.fillStyle(COLOR.barBack, 1);
+    g.fillRect(zone.x + 12, zone.y + zone.h - 18, zone.w - 24, 8);
+    g.fillStyle(COLOR.zone, 1);
+    g.fillRect(zone.x + 12, zone.y + zone.h - 18, (zone.w - 24) * progress, 8);
+    this.zoneLabels[part.id].setPosition(zone.x + zone.w / 2, zone.y + zone.h / 2 - 10);
   }
 
   private drawPart(part: TrainPart): void {
@@ -138,9 +149,15 @@ export class WorldView {
     g.fillStyle(partColor(part), 1);
     g.fillRect(r.x, r.y, r.w, r.h);
     if (part.id === "locomotive") {
-      // Lokomotive: dunklerer Frontblock, damit sie vom Wagon unterscheidbar ist.
+      // Lokomotive: dunklerer Frontblock mit Pfeil in Fahrtrichtung (D-061: Front zeigt nach rechts).
+      const facingRight = LAYOUT.trainFacing === "right";
+      const frontX = facingRight ? r.x + r.w - FRONT_WIDTH : r.x;
       g.fillStyle(0x000000, 0.28);
-      g.fillRect(r.x, r.y, 80, r.h);
+      g.fillRect(frontX, r.y, FRONT_WIDTH, r.h);
+      const tipX = facingRight ? frontX + FRONT_WIDTH - 14 : frontX + 14;
+      const baseX = facingRight ? frontX + 18 : frontX + FRONT_WIDTH - 18;
+      g.fillStyle(0xffffff, 0.6);
+      g.fillTriangle(tipX, r.y + r.h / 2 - 6, baseX, r.y + 16, baseX, r.y + r.h - 28);
     }
     g.lineStyle(3, COLOR.outline, 1);
     g.strokeRect(r.x, r.y, r.w, r.h);
@@ -151,10 +168,13 @@ export class WorldView {
     g.fillRect(r.x + 12, r.y + r.h - 16, r.w - 24, 8);
     g.fillStyle(barColor(ratio), 1);
     g.fillRect(r.x + 12, r.y + r.h - 16, (r.w - 24) * ratio, 8);
+    g.lineStyle(2, COLOR.outline, 1); // Umrandung, damit eine gelbe Leiste auf gelbem Teil lesbar bleibt
+    g.strokeRect(r.x + 12, r.y + r.h - 16, r.w - 24, 8);
 
     if (part.destroyed) this.drawCross(r.x + 20, r.y + 8, r.w - 40, r.h - 34);
     // Beschriftung seitlich versetzt, damit sie das Geschütz in der Wagon-Mitte nicht überdeckt.
-    const labelX = part.id === "locomotive" ? r.x + 80 + (r.w - 80) / 2 : r.x + 70;
+    const bodyStart = LAYOUT.trainFacing === "right" ? r.x : r.x + FRONT_WIDTH;
+    const labelX = part.id === "locomotive" ? bodyStart + (r.w - FRONT_WIDTH) / 2 : r.x + 70;
     this.partLabels[part.id].setPosition(labelX, r.y + 26);
   }
 

@@ -43,7 +43,7 @@ Alle Typen in `game/types.ts`. Positionen in logischen Einheiten (LE).
 
 | Objekt | Felder (Auswahl) | Hinweis |
 |---|---|---|
-| `World` | `status` (running, won, lost), `difficulty`, `timeMs`, `player`, `locomotive`, `wagon`, `turret`, `enemies`, `spawnPlan`, `stats`, `events`, `random` | `random` ist eine austauschbare Funktion (TECH-15) |
+| `World` | `status` (running, won, lost), `difficulty`, `timeMs`, `player`, `locomotive`, `wagon`, `turret`, `enemies`, `spawnPlan`, `stats`, `events`, `activeRepair`, `random` | `random` ist eine austauschbare Funktion (TECH-15) |
 | `Player` | `x`, `y`, `attackCooldownMs` | keine Lebenspunkte (CONFIRMED, D-057) |
 | `Enemy` | `id`, `x`, `y`, `hp`, `target` (`locomotive` oder `wagon`) | genau ein Typ (CONFIRMED, D-038) |
 | `TrainPart` (Lokomotive, Wagon) | `rect`, `zone`, `hp`, `maxHp`, `destroyed`, `repairProgressMs` | `destroyed` bleibt bis zum Reparaturabschluss, auch wenn `hp` steigt (REQ-TRN-003) |
@@ -142,7 +142,7 @@ Alle Werte stehen an genau einer Stelle (TECH-03). Gruppen: `CONFIRMED`, `LAYOUT
 | Reparaturschritt | 5 HP je 5000 ms |
 | Seitenverhältnis | 16:9 |
 
-**LAYOUT (TECH-01, TECH-08, TECH-09, TECH-10):** Spielfeld 1280 × 720 LE, Ursprung links oben, y nach unten. Zugbereich ab y = 620. Rechtecke (x, y, Breite, Höhe): Lokomotive (340, 620, 280, 80), Wagon (660, 620, 280, 80), Geschütz auf der Wagon-Mitte (800, 640). Reparaturzonen direkt über dem jeweiligen Teil: Lokomotive (340, 500, 280, 120), Wagon (660, 500, 280, 120). Zonen überlappen nicht. Spielerstart (640, 360), Spielerradius 14 LE, begehbar y ≤ 620 − Radius. Gegner-Spawn y = −30, x gleichverteilt zwischen 40 und 1240.
+**LAYOUT (TECH-01, TECH-08, TECH-09, TECH-10):** Spielfeld 1280 × 720 LE, Ursprung links oben, y nach unten. Zugbereich ab y = 620. Zugausrichtung (CONFIRMED, D-061): Der Zug fährt von links nach rechts, die Lokomotive steht ganz rechts, ihre Front zeigt nach rechts, alle Wagen stehen links von ihr (Konfigurationswert `trainFacing: "right"`). Rechtecke (x, y, Breite, Höhe): Wagon (340, 620, 280, 80), Lokomotive (660, 620, 280, 80), Geschütz auf der Wagon-Mitte (480, 640). Reparaturzonen direkt über dem jeweiligen Teil: Wagon (340, 500, 280, 120), Lokomotive (660, 500, 280, 120). Zonen überlappen nicht. Spielerstart (640, 360), Spielerradius 14 LE, begehbar y ≤ 620 − Radius. Gegner-Spawn y = −30, x gleichverteilt zwischen 40 und 1240.
 
 **TESTWERTE (nicht bestätigt, D-045):**
 
@@ -169,7 +169,7 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 | TECH-05 | Für das Geschütz ist ein Gegner „geeignet“, wenn er lebt und im Spielfeld ist (y ≥ 0). Bezugspunkt für „nächster“ ist die Geschützposition. Bei gleichem Abstand gewinnt die kleinere Gegner-ID. |
 | TECH-06 | Angriffe sind Soforttreffer ohne Projektil. Die Darstellung zeigt eine kurze Linie. |
 | TECH-07 | Die Zielwahl hat gleiche Wahrscheinlichkeit je intaktem Teil. Gegner sind Punkte. „Erreicht“ heißt: Punkt liegt im Rechteck des Zielteils. Der Gegner läuft auf die Rechteckmitte zu. |
-| TECH-08 | Zuglayout wie in Abschnitt 8. Der Zugbereich ist für den Spieler gesperrt. |
+| TECH-08 | Zuglayout wie in Abschnitt 8. Die Ausrichtung (Lokomotive ganz rechts, Front nach rechts, Wagen links) ist keine technische Wahl, sondern bestätigt (D-061). Der Zugbereich ist für den Spieler gesperrt. |
 | TECH-09 | Reparaturzonen sind Rechtecke über den Teilen, nicht überlappend. Bei überlappender Testkonfiguration wählt die Reihenfolge Wagon, Lokomotive. |
 | TECH-10 | Spawn oberhalb des Spielfeldes. Eine Gruppe spawnt gleichzeitig, jeder Gegner mit eigener zufälliger x-Position. |
 | TECH-11 | HUD-Inhalt: HP von Lokomotive und Wagon, Geschützzustand, ausstehende Gegner (noch nicht abgearbeitet), Schwierigkeitsgrad. |
@@ -182,6 +182,7 @@ Alle revidierbar, keine ändert eine bestätigte Gameplay-Regel.
 | TECH-18 | Angriffsablauf je Quelle (Schritt 7): Die Abkühlung zählt pro Schritt herunter. Ist sie ≤ 0 (mit 1e-6 ms Rundungstoleranz) und gibt es ein gültiges Ziel, erfolgt der Schuss und die Abkühlung wächst um das Intervall (der Rest wird mitgeführt, die mittlere Feuerrate ist bei jeder Schrittgröße gleich). Der erste Schuss fällt sofort, wenn ein Ziel vorhanden ist. Ohne Ziel bleibt die Quelle bereit (Abkühlung 0). Ein funktionsloses Geschütz hat Abkühlung 0 und ist nach der Reparatur sofort bereit. |
 | TECH-19 | Gültiges Ziel für beide Quellen: lebender Gegner im sichtbaren Spielfeld (y ≥ 0). Der Spielerangriff nutzt zusätzlich die Reichweite (≤ 90 LE, Bezugspunkt Spielerposition). Innerhalb eines Schritts schlägt zuerst der Spieler zu, dann das Geschütz. Beide dürfen denselben Gegner treffen, der Kill geht an die Quelle des tödlichen Treffers. Bei gleichem Abstand gewinnt die kleinere Gegner-ID. |
 | TECH-20 | Schrittreihenfolge: Kontakt und Zugschaden (Schritt 4) kommen vor den Angriffen (Schritt 5). Ein Gegner, der in einem Schritt sein Ziel erreicht, hat seinen Schaden angerichtet, bevor er beschossen wird. Trefferlinien bleiben 150 ms sichtbar (reine Anzeige). |
+| TECH-21 | Reparatur (Schritt 8): Je Zugteil ein Fortschrittszähler in ms. Er wächst nur, solange der Spieler in der Zone des reparierbaren Teils steht (Position im Rechteck, Rand inklusive). Alle 5000 ms (mit 1e-6 ms Rundungstoleranz) kommen 5 HP hinzu, auch mehrere Schritte bei einem großen Zeitschritt. Beim Abschluss (HP = Maximum) endet der Status „zerstört“, der Zähler wird 0, und nur bei einem zuvor zerstörten Wagon wird das Geschütz auf 20/20 gesetzt und aktiviert (D-055). `world.activeRepair` nennt das in diesem Schritt reparierte Teil und dient der Darstellung (hervorgehobene Zone, Fortschrittsleiste). Die aktive Reparaturzeit wird je Teil in `stats.repairMsByPart` erfasst. |
 
 ## 10. Anforderungen
 

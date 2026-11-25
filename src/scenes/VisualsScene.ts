@@ -88,9 +88,22 @@ const STATES: VisualState[] = [
       return { world };
     },
   },
+  {
+    title: "8  Reparatur aktiv: Wagon (55 HP) wird repariert, Zone hervorgehoben, Fortschritt 50 %. Lokomotive beschädigt, Zone sichtbar",
+    build: () => {
+      const world = createWorld("normal");
+      setPart(world.wagon, 55, false);
+      setPart(world.locomotive, 70, false);
+      world.wagon.repairProgressMs = 2500;
+      world.activeRepair = "wagon";
+      world.player.x = world.wagon.zone.x + world.wagon.zone.w / 2;
+      world.player.y = world.wagon.zone.y + 40;
+      return { world };
+    },
+  },
 ];
 
-const NUMBER_KEYS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"];
+const NUMBER_KEYS = ["ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN", "EIGHT"];
 
 export class VisualsScene extends Phaser.Scene {
   private view!: WorldView;
@@ -108,7 +121,7 @@ export class VisualsScene extends Phaser.Scene {
     this.view = new WorldView(this);
     this.hud = new Hud(this);
     this.titleText = this.add.text(16, 48, "", { fontFamily: "Arial, sans-serif", fontSize: "20px", color: "#ffffff", backgroundColor: "#00000088" });
-    this.add.text(16, 78, "Visuals-Test: Tasten 1 bis 7 oder Pfeiltasten links/rechts. Keine Simulation.", {
+    this.add.text(16, 78, "Visuals-Test: Tasten 1 bis 8 oder Pfeiltasten links/rechts. Keine Simulation.", {
       fontFamily: "Arial, sans-serif",
       fontSize: "14px",
       color: "#8aa4bf",

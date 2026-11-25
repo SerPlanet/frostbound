@@ -10,8 +10,9 @@
 | Zugteil | Lokomotive oder Wagon (das Geschütz ist ein Bauteil des Wagons und kein eigenes Gegnerziel). Jedes Zugteil hat eigene Lebenspunkte (D-041). |
 | Intakt | Ein Zugteil ist intakt, wenn es nicht zerstört ist, auch wenn es beschädigt ist (D-050). |
 | Abgearbeitet | Ein Gegner ist abgearbeitet, wenn er besiegt wurde oder sein Ziel erreicht, dort Schaden verursacht hat und verschwunden ist (D-050). |
-| Lokomotive | Zugteil. Im ersten Prototyp ohne besondere Zusatzfunktion (D-041). |
-| Wagon | Zugteil. Kann zerstört werden und verliert dann seine Funktion (D-041). |
+| Lokomotive | Zugteil. Steht immer ganz rechts am Zug, ihre Front zeigt nach rechts, in Fahrtrichtung (D-061). Im ersten Prototyp ohne besondere Zusatzfunktion (D-041). |
+| Wagon | Zugteil. Steht links von der Lokomotive, weitere Wagen kämen links dazu (D-061). Kann zerstört werden und verliert dann seine Funktion (D-041). |
+| Fahrtrichtung | Der Zug fährt immer von links nach rechts (D-061). |
 | Zuggeschütz | Automatische Waffe auf dem Wagon mit dem gesamten Spielfeld als Reichweite, 20 HP. Zerstört, wenn der Wagon zerstört ist (D-037, D-054, D-055). |
 | Zugziel | Das Zugteil, das ein Gegner ansteuert. Gewählt zufällig unter den intakten Zugteilen (D-051). |
 | Zerstört / vollständig zerstört | Lebenspunkte eines Zugteils waren 0. Der Status bleibt bis zum vollständigen Reparaturabschluss, auch wenn die Lebenspunkte währenddessen steigen. Zerstörte Teile sind keine gültigen Gegnerziele (D-039). |
