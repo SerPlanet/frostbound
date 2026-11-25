@@ -16,6 +16,8 @@ concurrency:
 
 jobs:
   build:
+    # Wird abgeschaltet, sobald die Veröffentlichung über gh-pages aktiv ist (Repository-Variable PAGES_MODE=branch, siehe publish.yml)
+    if: vars.PAGES_MODE != 'branch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,12 +27,14 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: node src/tests/selftest.ts
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
+    if: vars.PAGES_MODE != 'branch'
     needs: build
     runs-on: ubuntu-latest
     environment:

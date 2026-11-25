@@ -27,7 +27,11 @@
 | Intensität | Anzahl der Gegner pro Zeit in einer Phase (D-017). |
 | Runde | Ein Spieldurchlauf im Prototyp vom Start bis Sieg oder Niederlage. Die Beziehung zum Begriff „Spieltag“ ist nicht ausdrücklich festgelegt (Q-030). |
 | Spieltag | Begriff aus der Langzeitvision (24 Tage). Der Zug steht während eines Spieltages still (D-034). |
-| Greybox | Darstellung mit einfachen geometrischen Platzhaltern statt finaler Grafiken (D-006). |
+| Greybox | Darstellung mit einfachen geometrischen Platzhaltern statt finaler Grafiken (D-006). Bleibt im erweiterten Gesamtprototyp als technischer Vergleichsmodus erhalten (D-062). |
+| Erweiterter Gesamtprototyp | Entwicklungsziel seit D-062: Gameplay-Prototyp plus Spieloptik, Wiederaufbau, Adventstüren und Tageswechsel, Belohnungen und Upgrades, Waggons und Geschütze, Mini-Durchlauf. Die Regeln der neuen Funktionen sind OPEN, bis sie entschieden sind. |
+| Akzeptierter Stand | Der Stand auf `main`, den der Projektverantwortliche ausdrücklich akzeptiert hat (D-063). Live unter `/frostbound/`. |
+| Feature-Branch | Branch `feature/<name>` für eine neue Funktion (D-063). |
+| Testversion / Preview | Veröffentlichter Stand eines Feature-Branches unter `/frostbound/preview/<name>/`, zeigt im Spiel Branch und Commit (D-063). |
 | Tuning-Wert / TESTWERT | Zahlenwert, der anhand von Tests angepasst wird und vorläufig ist (D-045). |
 | TECH | Technische Entscheidung des ausführenden Agenten im Rahmen von D-060, revidierbar, ohne Änderung bestätigter Gameplay-Regeln. |
 | REQ / D / Q | Anforderungs-ID / Entscheidungs-ID / ID einer offenen Frage. |

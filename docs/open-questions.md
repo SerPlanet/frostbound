@@ -24,6 +24,9 @@ Nichts davon blockiert den Start der Prototyp-Implementierung. Für alle Zahlenw
 | Q-032 | Audio im Prototyp (weder bestätigt noch ausgeschlossen, im Plan nicht enthalten) | OPEN (nicht blockierend) | scope |
 | Q-012 | Upgrade- und Progressionssysteme des Vollspiels (nicht Prototyp, D-059) | Langzeit | resources, overview |
 | Q-016 | Funktionsweise, Verteilung und Inhalte der Adventskalendertürchen | Langzeit | overview |
+| Q-033 | Wiederaufbau zerstörter Zugteile (Dauer, Art, Anzeige, Verhältnis zur normalen Reparatur, Verhalten des Geschützes). Nächster Gameplay-Test, Stufe 1 (D-062) | OPEN (Stufe 1) | train-and-defense, repair-system |
+| Q-034 | Quelle und Stilrichtung der Grafik für die tatsächliche Spieloptik (Stufe 2, D-062) | OPEN (Stufe 2) | scope, testing-and-greybox |
+| Q-035 | Speicherung von Spielfortschritt im Browser über Sitzungen hinweg (Tageswechsel, Belohnungen, Upgrades; Stufe 3, D-062) | OPEN (Stufe 3) | scope |
 
 ## Technisch entschieden, im Spieltest zu prüfen (TECH, revidierbar)
 
@@ -52,7 +55,7 @@ Diese Punkte sind pragmatisch festgelegt, damit die Implementierung starten kann
 | Q-014 | Zugziele und Wahlregel | D-039, D-051 | 2026-11-25 |
 | Q-015 | Blockieren Gegner den Spieler? | D-035, D-057: nein | 2026-11-25 |
 | Q-017 | Zug still oder fahrend, Seite | D-034: still, unterer Rand | 2026-11-25 |
-| Q-021 | Branch-Modell | D-033 | 2026-11-25 |
+| Q-021 | Branch-Modell | D-033, präzisiert durch D-063 (feature-Branches, Freigabe, Testversionen) | 2026-11-25 |
 | Q-022 | Was repariert werden kann | D-043, D-056 | 2026-11-25 |
 | Q-023 | Zielwahl: Neuwahl bei Zerstörung | D-051 (Details: TECH) | 2026-11-25 |
 | Q-024 | Zählen Durchbrüche für den Sieg? | D-050: ja, Gegner gelten nach Schaden und Verschwinden als abgearbeitet | 2026-11-25 |

@@ -9,13 +9,13 @@
 1. Lies immer [README.md](README.md) (Statuslegende) und das für die Aufgabe genannte Dokumentenset.
 2. Setze nur **CONFIRMED** um. **PROPOSED** und **OPEN** werden nicht umgesetzt und nicht eigenmächtig entschieden. **TESTWERT** (vorläufiger Wert) und **TECH** (technische Entscheidung, D-060) dürfen wie dokumentiert umgesetzt und im Spieltest angepasst werden. Hängt eine Aufgabe von einem OPEN-Punkt ab, melde das dem Auftraggeber (mit Q-ID). Ein austauschbarer, klar markierter Platzhalter ist nur zulässig, wenn der Auftrag das ausdrücklich erlaubt.
 3. Erfinde keine Spielmechaniken, Werte oder Gegnertypen.
-4. Halte dich an den Nicht-Umfang in [prototype/scope.md](prototype/scope.md).
+4. Halte dich an den Umfang und den Nicht-Umfang in [prototype/scope.md](prototype/scope.md). Seit D-062 gehört der erweiterte Gesamtprototyp zum Umfang, die Regeln seiner neuen Funktionen sind aber OPEN, bis sie entschieden sind.
 5. Bei Widersprüchen zwischen Dokumenten gilt das [Entscheidungsprotokoll](project/decision-log.md). Melde den Widerspruch.
 6. Ändere Dokumente nur, wenn der Auftrag das vorsieht, und halte dich an [project/process.md](project/process.md).
 7. Technische Details, die nicht festgelegt sind, entscheidet der Implementierungs-Agent pragmatisch und dokumentiert sie als TECH (D-060). Dabei ändert er keine bestätigte Gameplay-Regel. Keine zusätzlichen Pakete, Testframeworks, Seed-Systeme oder Dashboards.
 8. Vor Abschluss: Prüfe sämtliche Akzeptanzkriterien der betroffenen `REQ-…`-Anforderungen, führe die Testfälle aus (automatisiert, sonst manuell beschrieben) und liste nicht erfüllte Kriterien im Abschlussbericht. Subjektive Kriterien (Spielspaß, Spannung, visuelle Qualität) sind menschliche Bewertungsaufgaben und werden nie von dir als erfüllt erklärt.
 9. Berichte getrennt: „technisch abgeschlossen“ (Definition of Done), „erfolgreich getestet“ (Tests bestanden, mit Nachweis). „Inhaltlich akzeptiert“ kann nur der Projektverantwortliche feststellen. Siehe [project/process.md](project/process.md), Abschnitt „Definition of Done“.
-10. Git: Normale, geprüfte und getestete Änderungen dürfen in `main`. Größere Architekturänderungen und Änderungen an CONFIRMED-Spielregeln nur nach vorheriger Freigabe des Projektverantwortlichen. Experimentelles bleibt auf separaten Branches (siehe [project/process.md](project/process.md)).
+10. Git: Neue Funktionen des erweiterten Gesamtprototyps entstehen auf `feature/<name>` und kommen nur nach ausdrücklicher Freigabe des Projektverantwortlichen in `main` (D-063, siehe [project/process.md](project/process.md)). Der Agent erklärt nie selbst, dass eine Funktion akzeptiert ist. Größere Architekturänderungen und Änderungen an CONFIRMED-Spielregeln nur nach vorheriger Freigabe. Die Live-Einstellung von GitHub Pages ändert ein Agent nur mit ausdrücklicher Zustimmung. Zugangsdaten gehören nie ins Repository.
 
 ## Aufgabe → zu lesende Dokumente
 
@@ -37,6 +37,7 @@
 | Prototyp implementieren (Schritt für Schritt) | technical/implementation-plan, technical/architecture | das jeweilige Fachdokument des Schritts |
 | Code-Architektur, Projektstruktur, Konfiguration | technical/architecture, technical/testing-and-greybox | prototype/scope |
 | Greybox-Darstellung, Tests, Testszenen | technical/testing-and-greybox, technical/architecture | das jeweilige Gameplay-Dokument |
+| Branches, Testversionen (Preview), Veröffentlichung, CI | technical/deployment-and-previews, project/process | technical/testing-and-greybox, technical/architecture |
 | Dokumentation pflegen, Entscheidung eintragen | project/process, project/decision-log | open-questions |
 | Offene Fragen klären | open-questions | betroffenes Fachdokument |
 | Adventskalender / Langzeitplanung | project/overview (Abschnitt Langzeitvision) | open-questions |

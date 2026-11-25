@@ -3,7 +3,7 @@
 **Zweck:** Einstiegspunkt und Index aller Projektdokumente.
 **Zielgruppe:** Alle Agenten und Menschen. Für die Auswahl der Dokumente je Aufgabe siehe [agent-guide.md](agent-guide.md).
 **Abhängigkeiten:** keine.
-**Stand des Projekts:** Dokumentation und Architektur des ersten Gameplay-Prototyps sind vorbereitet. Es existiert noch kein Spielcode. Nächster Schritt: Implementierung nach [technical/implementation-plan.md](technical/implementation-plan.md).
+**Stand des Projekts:** Der erste Gameplay-Prototyp ist umgesetzt und in Balance-Teststand-Runden getestet. Entwicklungsziel ist der erweiterte Gesamtprototyp (D-062). Aktuell: Stufe 0 (Branch- und Testversions-Infrastruktur, D-063). Stufenplan: [prototype/scope.md](prototype/scope.md), Ablauf und Freigabe: [project/process.md](project/process.md).
 
 ## Statuslegende (gilt in allen Dokumenten)
 
@@ -43,6 +43,7 @@ Spalte „Zusätzlich lesen“: Dokumente, die man für ein vollständiges Verst
 | [prototype/balance-and-statistics.md](prototype/balance-and-statistics.md) | Einfaches Balance-Modell, Rundenstatistik | aktiv | Balancing-Agent, Agent Statistik | combat, enemies, repair-system |
 | [technical/architecture.md](technical/architecture.md) | Technische Architektur des Prototyps: Schichten, Datenmodell, Spielschritt, Ordnerstruktur, Testwerte, TECH-Entscheidungen | aktiv | alle Code-Agenten | testing-and-greybox |
 | [technical/testing-and-greybox.md](technical/testing-and-greybox.md) | Selbsttest ohne Framework, drei Testmodi, Greybox | aktiv | Code- und Test-Agenten | architecture |
+| [technical/deployment-and-previews.md](technical/deployment-and-previews.md) | Testversionen, Branch-Struktur, Veröffentlichung über gh-pages, Schutz des akzeptierten Standes, Umstellungsablauf | aktiv (D-063, TECH-24) | alle Agenten, Projektverantwortlicher | process, testing-and-greybox |
 | [technical/implementation-plan.md](technical/implementation-plan.md) | Zehn Umsetzungsschritte des Prototyps mit Akzeptanzkriterien | aktiv | Implementierungs-Agenten | architecture, testing-and-greybox |
 
 ## Konventionen
